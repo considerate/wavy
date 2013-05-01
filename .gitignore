@@ -1,0 +1,6 @@
+# Cabal Dev
+/cabal-dev
+
+# Temp Files
+*~
+.*.swp

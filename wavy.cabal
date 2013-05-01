@@ -51,11 +51,12 @@ bug-reports:         http://bitbucket.org/robertmassaioli/wavy/issues
 
 library
   -- Modules exported by the library.
-  -- exposed-modules:     
+  exposed-modules:     Sound.Wav
   
   -- Modules included in this library but not exported.
   -- other-modules:       
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*
+                       , binary
   

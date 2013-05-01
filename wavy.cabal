@@ -16,7 +16,10 @@ version:             0.1.0.0
 synopsis:            Extract the PCM data from your WAV files.
 
 -- A longer description of the package.
--- description:         
+description:         Wavy was designed to be a fast and efficient method of extracting PCM
+                     data from WAV files. It is here to help you make fast use of Audio
+                     data in your Haskell programs and thus encourage many more audio
+                     projects in Haskell.
 
 -- The license under which the package is released.
 license:             BSD3
@@ -40,6 +43,10 @@ build-type:          Simple
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.8
+
+-- Bitbucket Information
+homepage:            http://bitbucket.org/robertmassaioli/wavy
+bug-reports:         http://bitbucket.org/robertmassaioli/wavy/issues
 
 
 library

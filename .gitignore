@@ -4,6 +4,9 @@
 # Cabal Dev
 /cabal-dev
 
+# Research - Don't include your research in the repository. Save it elsewhere.
+/research
+
 # Temp Files
 *~
 .*.swp

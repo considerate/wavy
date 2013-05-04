@@ -6,42 +6,24 @@ import Data.Binary
 import Data.Binary.Get
 import Data.Bits (shiftL, shiftR, (.|.))
 import Data.List (unfoldr)
-import Data.Word
-import Data.Char
-import Control.Monad (guard, replicateM, liftM)
+import Control.Monad (guard, liftM)
 
 import Sound.Wav.Core
 import Sound.Wav.Data
-import Sound.Wav.Info
+import Sound.Wav.List
 
-parseData :: FilePath -> IO Header
-parseData filepath = withBinaryFile filepath ReadMode parseHandle
+import Text.Show.Pretty
 
-parseHandle :: Handle -> IO Header
-parseHandle handle = do
-   r <- hGetChar handle
-   i <- hGetChar handle
-   f1 <- hGetChar handle
-   f2 <- hGetChar handle
-   return $ Header ([r, i, f1, f2] == "RIFF")
-
-parseBinaryData :: FilePath -> IO SectionOne
-parseBinaryData = decodeFile
-
-byteToChar :: Word8 -> Char
-byteToChar = chr . fromIntegral
-
-charToByte :: Char -> Word8
-charToByte = fromIntegral . ord
-
+ppLn :: Show a => a -> IO ()
+ppLn = putStrLn . ppShow
 
 instance Binary RiffFile where
    put _ = error ""
    get = do
       sectionOne <- get
       sectionTwo <- get
-      infoChunk <- lookAheadRFV getInfoChunk
-      return $ RiffFile sectionOne sectionTwo infoChunk
+      listChunk <- getListChunk
+      return $ RiffFile sectionOne sectionTwo listChunk
 
 instance Binary SectionOne where
    put (SOne chunkSize) = do
@@ -55,16 +37,6 @@ instance Binary SectionTwo where
    put _ = error ""
 
    get = getSectionTwo
-
--- TODO write a MonadPlus instance for Data.Binary
-
-getNWords :: Int -> Get [Word8]
-getNWords n = replicateM n getWord8
-
-getNChars :: Int -> Get [Char]
-getNChars = fmap (fmap byteToChar) . getNWords 
-
-getIdentifier = getNChars 4
 
 -- TODO Clean this up with monad transformers
 getSectionOne :: Get SectionOne

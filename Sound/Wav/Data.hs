@@ -15,8 +15,9 @@ data Header = Header Bool
 data RiffFile = RiffFile
    { sectionOne :: SectionOne
    , sectionTwo :: SectionTwo
-   , infoChunk :: RFV InfoChunk
+   , listChunk  :: RFV ListChunk
    }
+   deriving(Show)
 
 data SectionOne = SOne ChunkSize
                 deriving(Show)
@@ -39,6 +40,16 @@ data SectionTwo = SectionTwo
 data RFV a = ValidRFV a
            | NoDataRFV
            deriving(Show)
+
+data ListChunk = ListChunk
+   { listType :: String
+   , listChunkData :: RFV ListChunkType
+   }
+   deriving(Show)
+
+data ListChunkType 
+   = InfoListChunk InfoChunk
+   deriving(Show)
 
 -- This info chunk is defined in section 2-14 of the Spec
 data InfoChunk = InfoChunk
@@ -71,3 +82,29 @@ data InfoChunk = InfoChunk
    , technician            :: RFV String 
    }
    deriving(Show)
+   
+-- Creating a default infochunk with default data, there must be a better way
+infoChunkDefault = InfoChunk
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV
+   NoDataRFV

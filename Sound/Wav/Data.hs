@@ -9,6 +9,9 @@ type ByteRate = Word32
 type BlockAlignment = Word16
 type BitsPerSample = Word16
 
+newtype FromMaybe a = FromMaybe (Maybe a)
+                    deriving(Show)
+
 data Header = Header Bool
             deriving(Show)
 
@@ -26,3 +29,6 @@ data SectionTwo = SectionTwo
    , bitsPerSample :: BitsPerSample
    }
    deriving(Show)
+
+data ListSection = List ChunkSize
+                 deriving(Show)

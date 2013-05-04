@@ -9,7 +9,10 @@ import Data.List (unfoldr)
 import Data.Word
 import Data.Char
 import Control.Monad (guard, replicateM, liftM)
+
+import Sound.Wav.Core
 import Sound.Wav.Data
+import Sound.Wav.Info
 
 parseData :: FilePath -> IO Header
 parseData filepath = withBinaryFile filepath ReadMode parseHandle
@@ -31,6 +34,15 @@ byteToChar = chr . fromIntegral
 charToByte :: Char -> Word8
 charToByte = fromIntegral . ord
 
+
+instance Binary RiffFile where
+   put _ = error ""
+   get = do
+      sectionOne <- get
+      sectionTwo <- get
+      infoChunk <- lookAheadRFV getInfoChunk
+      return $ RiffFile sectionOne sectionTwo infoChunk
+
 instance Binary SectionOne where
    put (SOne chunkSize) = do
       put "RIFF"
@@ -44,14 +56,7 @@ instance Binary SectionTwo where
 
    get = getSectionTwo
 
-instance Binary (FromMaybe ListSection) where
-   put _ = error ""
-   get = fmap FromMaybe . lookAheadM $ fmap downwards getListSection
-
 -- TODO write a MonadPlus instance for Data.Binary
-
-downwards :: FromMaybe a -> Maybe a
-downwards (FromMaybe x) = x
 
 getNWords :: Int -> Get [Word8]
 getNWords n = replicateM n getWord8
@@ -107,15 +112,6 @@ getOptionalSection identifier getter = do
       Just _ -> fmap Just getter
 -}
 
--- TODO This is the Maybe Monad Transformer right here
-getListSection :: Get (FromMaybe ListSection)
-getListSection = do
-   listHeader <- getIdentifier
-   if listHeader /= "LIST"
-      then return . FromMaybe $ Nothing
-      else do
-         chunkSize <- getWord32le
-         return . FromMaybe . Just $ List chunkSize
    
 {-
 parseSectionOne :: Binary SectionOne

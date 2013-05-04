@@ -9,11 +9,14 @@ type ByteRate = Word32
 type BlockAlignment = Word16
 type BitsPerSample = Word16
 
-newtype FromMaybe a = FromMaybe (Maybe a)
-                    deriving(Show)
-
 data Header = Header Bool
             deriving(Show)
+
+data RiffFile = RiffFile
+   { sectionOne :: SectionOne
+   , sectionTwo :: SectionTwo
+   , infoChunk :: RFV InfoChunk
+   }
 
 data SectionOne = SOne ChunkSize
                 deriving(Show)
@@ -30,5 +33,41 @@ data SectionTwo = SectionTwo
    }
    deriving(Show)
 
-data ListSection = List ChunkSize
-                 deriving(Show)
+-- Riff File Value (Hack to get around Maybe instance in binary)
+-- This is a hack to get around the interface Binary a => Binary (Maybe a)
+-- If we did not then it would do strange things that we do not want it to do.
+data RFV a = ValidRFV a
+           | NoDataRFV
+           deriving(Show)
+
+-- This info chunk is defined in section 2-14 of the Spec
+data InfoChunk = InfoChunk
+   { archiveLocation       :: RFV String
+   , artist                :: RFV String
+   , commissionedBy        :: RFV String
+   , comments              :: RFV String
+   , copyrights            :: RFV [String]
+   , creationDate          :: RFV String
+   , croppedDetails        :: RFV String
+   , originalDimensions    :: RFV String
+   , dotsPerInch           :: RFV Integer
+   , engineers             :: RFV [String]
+   , genre                 :: RFV String
+   , keywords              :: RFV [String]
+   -- TODO how would this be better represented
+   , lightness             :: RFV String 
+   , originalMedium        :: RFV String 
+   , name                  :: RFV String
+   , coloursInPalette      :: RFV Integer
+   , originalProduct       :: RFV String
+   , subject               :: RFV String
+   -- TODO make sure we output our name
+   , creationSoftware      :: RFV String 
+   -- TODO how would this be better represented
+   , sharpness             :: RFV String 
+   , contentSource         :: RFV String
+   , originalForm          :: RFV String
+   -- TODO this is the person that digitised the file, prompt for this
+   , technician            :: RFV String 
+   }
+   deriving(Show)

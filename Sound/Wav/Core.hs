@@ -15,7 +15,7 @@ byteToChar = chr . fromIntegral
 charToByte :: Char -> Word8
 charToByte = fromIntegral . ord
 
-bytesToString :: [Word8] -> [Char]
+bytesToString :: [Word8] -> String
 bytesToString = map byteToChar
 
 dropTrailingNull :: String -> String
@@ -32,7 +32,7 @@ makeEven val =
 getNWords :: Int -> Get [Word8]
 getNWords n = replicateM n getWord8
 
-getNChars :: Int -> Get [Char]
+getNChars :: Int -> Get String
 getNChars = fmap (fmap byteToChar) . getNWords 
 
 getIdentifier = getNChars 4

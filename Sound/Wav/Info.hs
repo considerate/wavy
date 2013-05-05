@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Sound.Wav.Info 
    ( getInfoChunk
+   , updateInfoChunk
    ) where
 
 import Data.Binary (Get(..), Binary(..))
@@ -11,6 +12,17 @@ import Data.Word
 
 import Sound.Wav.Core
 import Sound.Wav.Data
+
+-- TODO the code in this function could be greatly cleaned up via lenses
+updateInfoChunk :: (InfoChunk -> InfoChunk) -> RiffFile -> RiffFile
+updateInfoChunk updater file = updatedfile getInfoData
+   where
+      getInfoData = 
+         case listChunk file of
+            ValidRFV (ListChunk "INFO" (ValidRFV (InfoListChunk infoData))) -> infoData
+            _ -> infoChunkDefault
+      updatedfile infoData = 
+         file { listChunk = ValidRFV (ListChunk "INFO" (ValidRFV (InfoListChunk $ updater infoData))) }
 
 getInfoChunk finishLocation = repeatParse infoChunkDefault finishLocation parseSection
 

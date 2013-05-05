@@ -46,12 +46,12 @@ instance Binary FormatChunk where
 getSectionOne :: Get SectionOne
 getSectionOne = do
    riffHeader <- getIdentifier
-   if (riffHeader /= "RIFF") 
+   if riffHeader /= "RIFF"
       then fail "Expected RIFF file structure"
       else do
          chunkSize <- getWord32le
          wavHeader <- getIdentifier
-         if (wavHeader /= "WAVE")
+         if wavHeader /= "WAVE"
             then fail "Expected WAVE file to be present in header."
             else return $ SOne chunkSize
 

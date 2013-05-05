@@ -21,78 +21,44 @@ ppLn = putStrLn . ppShow
 instance Binary RiffFile where
    put _ = error ""
    get = do
-      sectionOne <- get
-      formatChunk <- get
+      chunkSize <- getRootChunk
+      formatChunk <- getFormatChunk
       -- TODO there may be one or more list chunks, we should try and get them all here
       listChunk <- getListChunk
       wavData <- getData formatChunk
-      return $ RiffFile sectionOne formatChunk listChunk wavData
+      return $ RiffFile chunkSize formatChunk listChunk wavData
 
-instance Binary SectionOne where
-   put (SOne chunkSize) = do
-      put "RIFF"
-      put chunkSize
-      put "WAVE"
+unexpectedMessage expected actual = 
+   "Unexpected Identifier: Expected '" ++ expected 
+   ++ "' but recieved '" ++ actual ++ "'"
 
-   get = getSectionOne
+expectIdentifier :: String -> Get ()
+expectIdentifier expected = do
+   actual <- getIdentifier
+   if actual /= expected
+      then fail $ unexpectedMessage expected actual
+      else return ()
 
-instance Binary FormatChunk where
-   put _ = error ""
-
-   get = getFormatChunk
-
--- TODO Clean this up with monad transformers
-getSectionOne :: Get SectionOne
-getSectionOne = do
+getRootChunk :: Get ChunkSize
+getRootChunk = do
    riffHeader <- getIdentifier
-   if riffHeader /= "RIFF"
-      then fail "Expected RIFF file structure"
-      else do
+   case riffHeader of
+      "RIFX" -> fail "RIFX file format is not yet supported. Sorry."
+      "RIFF" -> do
          chunkSize <- getWord32le
-         wavHeader <- getIdentifier
-         if wavHeader /= "WAVE"
-            then fail "Expected WAVE file to be present in header."
-            else return $ SOne chunkSize
+         expectIdentifier "WAVE"
+         return chunkSize
+      _ -> fail $ unexpectedMessage "RIFF or RIFX" riffHeader
 
 
 getFormatChunk :: Get FormatChunk
 getFormatChunk = do
-   fmtHeader <- getIdentifier
-   if fmtHeader /= "fmt "
-      then fail "Expected the beginning of the format section."
-      else do
-         chunkSize <- getWord32le
-         audio <- getWord16le
-         channelCount <- getWord16le
-         sampleRateData <- getWord32le
-         byteRateData <- getWord32le
-         blockAlign <- getWord16le
-         bitsPerSample <- getWord16le
-         return $ FormatChunk chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample
-
-
-{-
-tryIdentifier :: String -> Get (Maybe String)
-tryIdentifier identifier = do
-   readData <- getIdentifier
-   if readData == identifier
-      then return . Just $ readData
-      else return Nothing
-
-getOptionalSection :: String -> Get a -> Get (Maybe a)
-getOptionalSection identifier getter = do
-   identifier <- lookAheadM $ tryIdentifier identifier 
-   case identifier of
-      Nothing -> return Nothing
-      Just _ -> fmap Just getter
--}
-
-   
-{-
-parseSectionOne :: Binary SectionOne
-parseSectionOne = do
-   riffHeader <- sequence (take 4 . repeat . getWord8)
-   chunkSize <- get
-   waveComment <- sequence (take 4 . repeat . getWord8)
-   return $ SOne chunkSize
-   -}
+   expectIdentifier "fmt "
+   chunkSize <- getWord32le
+   audio <- getWord16le
+   channelCount <- getWord16le
+   sampleRateData <- getWord32le
+   byteRateData <- getWord32le
+   blockAlign <- getWord16le
+   bitsPerSample <- getWord16le
+   return $ FormatChunk chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample

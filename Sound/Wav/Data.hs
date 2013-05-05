@@ -1,5 +1,6 @@
 module Sound.Wav.Data where
 
+import Data.Int
 import Data.Word
 
 type ChunkSize = Word32
@@ -13,15 +14,12 @@ data Header = Header Bool
             deriving(Show)
 
 data RiffFile = RiffFile
-   { sectionOne :: SectionOne
+   { rootChunkSize :: ChunkSize
    , fileFormat :: FormatChunk
    , listChunk  :: RFV ListChunk
    , waveData   :: WaveData
    }
    deriving(Show)
-
-data SectionOne = SOne ChunkSize
-                deriving(Show)
 
 data FormatChunk = FormatChunk
    -- The size of the rest of the chunk after this point...is this data useful in the final result?
@@ -116,8 +114,8 @@ data WaveData = WaveData [Channel]
 data Channel = Channel [Sample]
              deriving(Show)
 data Sample 
-   = Word8Sample Word8
-   | Word16Sample Word16
-   | Word32Sample Word32
-   | Word64Sample Word64
+   = Int8Sample Int8
+   | Int16Sample Int16
+   | Int32Sample Int32
+   | Int64Sample Int64
    deriving(Show)

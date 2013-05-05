@@ -3,8 +3,9 @@ module Sound.Wav.Data where
 import Data.Int
 import Data.Word
 
+import Sound.Wav.AudioFormats
+
 type ChunkSize = Word32
-type AudioFormat = Word16
 type SampleRate = Word32
 type ByteRate = Word32
 type BlockAlignment = Word16
@@ -16,6 +17,7 @@ data Header = Header Bool
 data RiffFile = RiffFile
    { rootChunkSize :: ChunkSize
    , fileFormat :: FormatChunk
+   , factChunk :: RFV FactChunk
    , listChunk  :: RFV ListChunk
    , waveData   :: WaveData
    }
@@ -39,6 +41,11 @@ data FormatChunk = FormatChunk
 data RFV a = ValidRFV a
            | NoDataRFV
            deriving(Show)
+
+data FactChunk = FactChunk
+   { factSampleCount :: Word32
+   }
+   deriving(Show)
 
 data ListChunk = ListChunk
    { listType :: String

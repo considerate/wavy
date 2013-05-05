@@ -6,12 +6,14 @@ import Data.Binary
 import Data.Binary.Get
 import Data.Bits (shiftL, shiftR, (.|.))
 import Data.List (unfoldr)
+import Data.Int
 import Control.Monad (guard, liftM)
 
 import Sound.Wav.Core
 import Sound.Wav.Data
 import Sound.Wav.List
 import Sound.Wav.ChannelData
+import Sound.Wav.AudioFormats
 
 import Text.Show.Pretty
 
@@ -25,8 +27,9 @@ instance Binary RiffFile where
       formatChunk <- getFormatChunk
       -- TODO there may be one or more list chunks, we should try and get them all here
       listChunk <- getListChunk
+      factChunk <- getFactChunk
       wavData <- getData formatChunk
-      return $ RiffFile chunkSize formatChunk listChunk wavData
+      return $ RiffFile chunkSize formatChunk factChunk listChunk wavData
 
 unexpectedMessage expected actual = 
    "Unexpected Identifier: Expected '" ++ expected 
@@ -50,15 +53,31 @@ getRootChunk = do
          return chunkSize
       _ -> fail $ unexpectedMessage "RIFF or RIFX" riffHeader
 
+getFactChunk :: Get (RFV FactChunk)
+getFactChunk =
+   getPotential "fact" getFactChunkHelper
+   where 
+      getFactChunkHelper :: Get FactChunk
+      getFactChunkHelper = do
+         chunkSize <- getWord32le
+         return . FactChunk =<< getWord32le
+
+skipToChunkBoundary :: Int64 -> Word32 -> Get ()
+skipToChunkBoundary start chunkSize = bytesRead >>= skip . bytesToSkip 
+   where
+      bytesToSkip :: Int64 -> Int
+      bytesToSkip currentLocation = fromIntegral $ start + (fromIntegral chunkSize) - currentLocation
 
 getFormatChunk :: Get FormatChunk
 getFormatChunk = do
    expectIdentifier "fmt "
    chunkSize <- getWord32le
-   audio <- getWord16le
+   startLocation <- bytesRead
+   audio <- fmap getAudioFormatFromData getWord16le
    channelCount <- getWord16le
    sampleRateData <- getWord32le
    byteRateData <- getWord32le
    blockAlign <- getWord16le
    bitsPerSample <- getWord16le
+   skipToChunkBoundary startLocation chunkSize
    return $ FormatChunk chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample

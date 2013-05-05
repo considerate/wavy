@@ -58,12 +58,14 @@ library
   other-modules:       Sound.Wav.Core,
                        Sound.Wav.ChannelData,
                        Sound.Wav.Info,
+                       Sound.Wav.AudioFormats,
                        Sound.Wav.List
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*
                        , binary
                        , split
+                       , containers
                        , pretty-show
 
 executable show-wav-data

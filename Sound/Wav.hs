@@ -22,8 +22,12 @@ instance Binary RiffFile where
    get = do
       sectionOne <- get
       sectionTwo <- get
+      -- TODO there may be one or more list chunks, we should try and get them all here
       listChunk <- getListChunk
-      return $ RiffFile sectionOne sectionTwo listChunk
+      fileData <- getIdentifier
+      if fileData /= "data"
+         then fail "data not found"
+         else return $ RiffFile sectionOne sectionTwo listChunk
 
 instance Binary SectionOne where
    put (SOne chunkSize) = do
@@ -33,10 +37,10 @@ instance Binary SectionOne where
 
    get = getSectionOne
 
-instance Binary SectionTwo where
+instance Binary FormatChunk where
    put _ = error ""
 
-   get = getSectionTwo
+   get = getFormatChunk
 
 -- TODO Clean this up with monad transformers
 getSectionOne :: Get SectionOne
@@ -52,8 +56,8 @@ getSectionOne = do
             else return $ SOne chunkSize
 
 
-getSectionTwo :: Get SectionTwo
-getSectionTwo = do
+getFormatChunk :: Get FormatChunk
+getFormatChunk = do
    fmtHeader <- getIdentifier
    if fmtHeader /= "fmt "
       then fail "Expected the beginning of the format section."
@@ -65,7 +69,7 @@ getSectionTwo = do
          byteRateData <- getWord32le
          blockAlign <- getWord16le
          bitsPerSample <- getWord16le
-         return $ SectionTwo chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample
+         return $ FormatChunk chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample
 
 
 {-

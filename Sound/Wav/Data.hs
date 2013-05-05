@@ -14,7 +14,7 @@ data Header = Header Bool
 
 data RiffFile = RiffFile
    { sectionOne :: SectionOne
-   , sectionTwo :: SectionTwo
+   , fileFormat :: FormatChunk
    , listChunk  :: RFV ListChunk
    }
    deriving(Show)
@@ -22,7 +22,7 @@ data RiffFile = RiffFile
 data SectionOne = SOne ChunkSize
                 deriving(Show)
 
-data SectionTwo = SectionTwo
+data FormatChunk = FormatChunk
    -- The size of the rest of the chunk after this point...is this data useful in the final result?
    { sectionSize :: ChunkSize 
    , audioFormat :: AudioFormat -- Values other than one indicate some form of compression

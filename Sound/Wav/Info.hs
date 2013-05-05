@@ -24,12 +24,6 @@ repeatParse initial stopLength step = go initial
             then return next
             else repeatParse next stopLength step
 
-makeEven :: Integral a => a -> a
-makeEven val =
-   if even val
-      then val
-      else val + 1
-
 parseSection :: InfoChunk -> Get InfoChunk
 parseSection initial = do 
    ident <- getIdentifier

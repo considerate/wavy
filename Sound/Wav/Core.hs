@@ -21,6 +21,13 @@ bytesToString = map byteToChar
 dropTrailingNull :: String -> String
 dropTrailingNull = reverse . dropWhile (== '\0') . reverse
 
+-- Numbers
+makeEven :: Integral a => a -> a
+makeEven val =
+   if even val
+      then val
+      else val + 1
+
 -- Get Words and Identifiers
 getNWords :: Int -> Get [Word8]
 getNWords n = replicateM n getWord8

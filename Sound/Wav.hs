@@ -11,6 +11,7 @@ import Control.Monad (guard, liftM)
 import Sound.Wav.Core
 import Sound.Wav.Data
 import Sound.Wav.List
+import Sound.Wav.ChannelData
 
 import Text.Show.Pretty
 
@@ -21,13 +22,11 @@ instance Binary RiffFile where
    put _ = error ""
    get = do
       sectionOne <- get
-      sectionTwo <- get
+      formatChunk <- get
       -- TODO there may be one or more list chunks, we should try and get them all here
       listChunk <- getListChunk
-      fileData <- getIdentifier
-      if fileData /= "data"
-         then fail "data not found"
-         else return $ RiffFile sectionOne sectionTwo listChunk
+      wavData <- getData formatChunk
+      return $ RiffFile sectionOne formatChunk listChunk wavData
 
 instance Binary SectionOne where
    put (SOne chunkSize) = do

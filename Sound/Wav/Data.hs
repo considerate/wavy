@@ -16,6 +16,7 @@ data RiffFile = RiffFile
    { sectionOne :: SectionOne
    , fileFormat :: FormatChunk
    , listChunk  :: RFV ListChunk
+   , waveData   :: WaveData
    }
    deriving(Show)
 
@@ -108,3 +109,15 @@ infoChunkDefault = InfoChunk
    NoDataRFV
    NoDataRFV
    NoDataRFV
+
+data WaveData = WaveData [Channel]
+              deriving(Show)
+
+data Channel = Channel [Sample]
+             deriving(Show)
+data Sample 
+   = Word8Sample Word8
+   | Word16Sample Word16
+   | Word32Sample Word32
+   | Word64Sample Word64
+   deriving(Show)

@@ -14,6 +14,10 @@ import Sound.Wav.AudioFormats
 
 import Text.Show.Pretty
 
+decodeRiffFileOrFail :: FilePath -> IO (Either (ByteOffset, String) RiffFile)
+decodeRiffFileOrFail = decodeFileOrFail
+
+-- TODO remove this helper function
 ppLn :: Show a => a -> IO ()
 ppLn = putStrLn . ppShow
 

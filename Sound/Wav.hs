@@ -1,13 +1,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Sound.Wav where
 
-import System.IO
 import Data.Binary
 import Data.Binary.Get
-import Data.Bits (shiftL, shiftR, (.|.))
-import Data.List (unfoldr)
 import Data.Int
-import Control.Monad (guard, liftM)
+import Control.Monad (when)
 
 import Sound.Wav.Core
 import Sound.Wav.Data
@@ -38,9 +35,7 @@ unexpectedMessage expected actual =
 expectIdentifier :: String -> Get ()
 expectIdentifier expected = do
    actual <- getIdentifier
-   if actual /= expected
-      then fail $ unexpectedMessage expected actual
-      else return ()
+   when (actual /= expected) $ fail (unexpectedMessage expected actual)
 
 getRootChunk :: Get ChunkSize
 getRootChunk = do
@@ -73,7 +68,7 @@ getFormatChunk = do
    expectIdentifier "fmt "
    chunkSize <- getWord32le
    startLocation <- bytesRead
-   audio <- fmap getAudioFormatFromData getWord16le
+   audio <- fmap getAudioFormat getWord16le
    channelCount <- getWord16le
    sampleRateData <- getWord32le
    byteRateData <- getWord32le

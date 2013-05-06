@@ -1,4 +1,9 @@
-module Sound.Wav.AudioFormats where
+module Sound.Wav.AudioFormats 
+   ( AudioFormatData
+   , AudioFormat(..)
+   , getAudioFormat
+   )
+ where
 
 import Data.Word
 import Data.Maybe (fromMaybe)
@@ -7,8 +12,8 @@ import qualified Data.Map as M
 
 type AudioFormatData = Word16
 
-getAudioFormatFromData :: AudioFormatData -> AudioFormat
-getAudioFormatFromData key = fromMaybe defaultValue possibleKey  
+getAudioFormat :: AudioFormatData -> AudioFormat
+getAudioFormat key = fromMaybe defaultValue possibleKey  
    where
       possibleKey = M.lookup key audioFormatMap
       defaultValue = UnknownFormat key

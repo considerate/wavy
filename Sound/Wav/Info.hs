@@ -19,12 +19,12 @@ updateInfoChunk :: (InfoChunk -> InfoChunk) -> RiffFile -> RiffFile
 updateInfoChunk updater file = updatedfile $ getInfoData file
    where
       updatedfile infoData = 
-         file { listChunk = ValidRFV (ListChunk "INFO" (ValidRFV (InfoListChunk $ updater infoData))) }
+         file { listChunk = Just (ListChunk "INFO" (Just (InfoListChunk $ updater infoData))) }
 
 getInfoData :: RiffFile -> InfoChunk
 getInfoData file = 
    case listChunk file of
-      ValidRFV (ListChunk "INFO" (ValidRFV (InfoListChunk infoData))) -> infoData
+      Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> infoData
       _ -> infoChunkDefault
 
 -- getMaybeInfoData :: RiffFile -> Maybe InfoChunk
@@ -46,29 +46,29 @@ parseSection :: InfoChunk -> Get InfoChunk
 parseSection initial = do 
    ident <- getIdentifier
    case ident of
-      "IARL" -> (\x -> return $ initial { archiveLocation = ValidRFV x})   =<< parseInfoString
-      "IART" -> (\x -> return $ initial { artist = ValidRFV x})            =<< parseInfoString
-      "ICMS" -> (\x -> return $ initial { commissionedBy = ValidRFV x})    =<< parseInfoString
-      "ICMT" -> (\x -> return $ initial { comments = ValidRFV x})          =<< parseInfoString
-      "ICOP" -> (\x -> return $ initial { copyrights = ValidRFV x})        =<< parseInfoStrings
-      "ICRD" -> (\x -> return $ initial { creationDate = ValidRFV x})      =<< parseInfoString
-      "ICRP" -> (\x -> return $ initial { croppedDetails = ValidRFV x})    =<< parseInfoString
-      "IDIM" -> (\x -> return $ initial { originalDimensions = ValidRFV x}) =<< parseInfoString
+      "IARL" -> (\x -> return $ initial { archiveLocation = Just x})   =<< parseInfoString
+      "IART" -> (\x -> return $ initial { artist = Just x})            =<< parseInfoString
+      "ICMS" -> (\x -> return $ initial { commissionedBy = Just x})    =<< parseInfoString
+      "ICMT" -> (\x -> return $ initial { comments = Just x})          =<< parseInfoString
+      "ICOP" -> (\x -> return $ initial { copyrights = Just x})        =<< parseInfoStrings
+      "ICRD" -> (\x -> return $ initial { creationDate = Just x})      =<< parseInfoString
+      "ICRP" -> (\x -> return $ initial { croppedDetails = Just x})    =<< parseInfoString
+      "IDIM" -> (\x -> return $ initial { originalDimensions = Just x}) =<< parseInfoString
       "IDPI" -> (\x -> return $ initial { dotsPerInch = x})                =<< parseInteger
-      "IENG" -> (\x -> return $ initial { engineers = ValidRFV x})         =<< parseInfoStrings
-      "IGNR" -> (\x -> return $ initial { genre = ValidRFV x})             =<< parseInfoString
-      "IKEY" -> (\x -> return $ initial { keywords = ValidRFV x})          =<< parseInfoStrings
-      "ILGT" -> (\x -> return $ initial { lightness = ValidRFV x})         =<< parseInfoString
-      "IMED" -> (\x -> return $ initial { originalMedium = ValidRFV x})    =<< parseInfoString
-      "INAM" -> (\x -> return $ initial { name = ValidRFV x})              =<< parseInfoString
+      "IENG" -> (\x -> return $ initial { engineers = Just x})         =<< parseInfoStrings
+      "IGNR" -> (\x -> return $ initial { genre = Just x})             =<< parseInfoString
+      "IKEY" -> (\x -> return $ initial { keywords = Just x})          =<< parseInfoStrings
+      "ILGT" -> (\x -> return $ initial { lightness = Just x})         =<< parseInfoString
+      "IMED" -> (\x -> return $ initial { originalMedium = Just x})    =<< parseInfoString
+      "INAM" -> (\x -> return $ initial { name = Just x})              =<< parseInfoString
       "IPLT" -> (\x -> return $ initial { coloursInPalette = x})           =<< parseInteger
-      "IPRD" -> (\x -> return $ initial { originalProduct = ValidRFV x})   =<< parseInfoString
-      "ISBJ" -> (\x -> return $ initial { subject = ValidRFV x})           =<< parseInfoString
-      "ISFT" -> (\x -> return $ initial { creationSoftware = ValidRFV x})  =<< parseInfoString
-      "ISHP" -> (\x -> return $ initial { sharpness = ValidRFV x})         =<< parseInfoString
-      "ISCR" -> (\x -> return $ initial { contentSource = ValidRFV x})     =<< parseInfoString
-      "ISRF" -> (\x -> return $ initial { originalForm = ValidRFV x})      =<< parseInfoString
-      "ITCH" -> (\x -> return $ initial { technician = ValidRFV x})        =<< parseInfoString
+      "IPRD" -> (\x -> return $ initial { originalProduct = Just x})   =<< parseInfoString
+      "ISBJ" -> (\x -> return $ initial { subject = Just x})           =<< parseInfoString
+      "ISFT" -> (\x -> return $ initial { creationSoftware = Just x})  =<< parseInfoString
+      "ISHP" -> (\x -> return $ initial { sharpness = Just x})         =<< parseInfoString
+      "ISCR" -> (\x -> return $ initial { contentSource = Just x})     =<< parseInfoString
+      "ISRF" -> (\x -> return $ initial { originalForm = Just x})      =<< parseInfoString
+      "ITCH" -> (\x -> return $ initial { technician = Just x})        =<< parseInfoString
       -- Skipping and ignoring them kinda sucks, in the future make it so 
       -- that you put them in a buffer somewhere
       _ -> getWord32le >>= skip . makeEven . fromIntegral >> return initial
@@ -82,7 +82,7 @@ parseInfoString = do
 parseInfoStrings :: Get [String]
 parseInfoStrings = fmap (splitOn "; ") parseInfoString
 
-parseInteger :: Get (RFV Integer)
+parseInteger :: Get (Maybe Integer)
 parseInteger = do
    chunkSize <- getWord32le
    case chunkSize of
@@ -90,7 +90,7 @@ parseInteger = do
       2 -> getWord16le >>= rvi
       4 -> getWord32le >>= rvi
       8 -> getWord64le >>= rvi
-      _ -> return NoDataRFV
+      _ -> return Nothing
    where
-      rvi :: Integral a => a -> Get (RFV Integer)
-      rvi = return . ValidRFV . fromIntegral
+      rvi :: Integral a => a -> Get (Maybe Integer)
+      rvi = return . Just . fromIntegral

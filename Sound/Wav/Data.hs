@@ -17,8 +17,8 @@ data Header = Header Bool
 data RiffFile = RiffFile
    { rootChunkSize :: ChunkSize
    , fileFormat :: FormatChunk
-   , factChunk :: RFV FactChunk
-   , listChunk  :: RFV ListChunk
+   , factChunk :: Maybe FactChunk
+   , listChunk  :: Maybe ListChunk
    , waveData   :: WaveData
    }
    deriving(Show)
@@ -35,13 +35,6 @@ data FormatChunk = FormatChunk
    }
    deriving(Show)
 
--- Riff File Value (Hack to get around Maybe instance in binary)
--- This is a hack to get around the interface Binary a => Binary (Maybe a)
--- If we did not then it would do strange things that we do not want it to do.
-data RFV a = ValidRFV a
-           | NoDataRFV
-           deriving(Show)
-
 data FactChunk = FactChunk
    { factSampleCount :: Word32
    }
@@ -49,7 +42,7 @@ data FactChunk = FactChunk
 
 data ListChunk = ListChunk
    { listType :: String
-   , listChunkData :: RFV ListChunkType
+   , listChunkData :: Maybe ListChunkType
    }
    deriving(Show)
 
@@ -59,61 +52,61 @@ data ListChunkType
 
 -- This info chunk is defined in section 2-14 of the Spec
 data InfoChunk = InfoChunk
-   { archiveLocation       :: RFV String
-   , artist                :: RFV String
-   , commissionedBy        :: RFV String
-   , comments              :: RFV String
-   , copyrights            :: RFV [String]
-   , creationDate          :: RFV String
-   , croppedDetails        :: RFV String
-   , originalDimensions    :: RFV String
-   , dotsPerInch           :: RFV Integer
-   , engineers             :: RFV [String]
-   , genre                 :: RFV String
-   , keywords              :: RFV [String]
+   { archiveLocation       :: Maybe String
+   , artist                :: Maybe String
+   , commissionedBy        :: Maybe String
+   , comments              :: Maybe String
+   , copyrights            :: Maybe [String]
+   , creationDate          :: Maybe String
+   , croppedDetails        :: Maybe String
+   , originalDimensions    :: Maybe String
+   , dotsPerInch           :: Maybe Integer
+   , engineers             :: Maybe [String]
+   , genre                 :: Maybe String
+   , keywords              :: Maybe [String]
    -- TODO how would this be better represented
-   , lightness             :: RFV String 
-   , originalMedium        :: RFV String 
-   , name                  :: RFV String
-   , coloursInPalette      :: RFV Integer
-   , originalProduct       :: RFV String
-   , subject               :: RFV String
+   , lightness             :: Maybe String 
+   , originalMedium        :: Maybe String 
+   , name                  :: Maybe String
+   , coloursInPalette      :: Maybe Integer
+   , originalProduct       :: Maybe String
+   , subject               :: Maybe String
    -- TODO make sure we output our name
-   , creationSoftware      :: RFV String 
+   , creationSoftware      :: Maybe String 
    -- TODO how would this be better represented
-   , sharpness             :: RFV String 
-   , contentSource         :: RFV String
-   , originalForm          :: RFV String
+   , sharpness             :: Maybe String 
+   , contentSource         :: Maybe String
+   , originalForm          :: Maybe String
    -- TODO this is the person that digitised the file, prompt for this
-   , technician            :: RFV String 
+   , technician            :: Maybe String 
    }
    deriving(Show)
    
 -- Creating a default infochunk with default data, there must be a better way
 infoChunkDefault = InfoChunk
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
-   NoDataRFV
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
+   Nothing
 
 data WaveData = WaveData [Channel]
               deriving(Show)

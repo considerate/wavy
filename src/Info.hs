@@ -49,12 +49,13 @@ displayRiffFile (filename, file) = do
    displayTime . audioTime $ file
    putStrLn ""
    displayFormatSection . fileFormat $ file
+   -- displayInfoSection . 
 
 displayName :: String -> RiffFile -> IO ()
 displayName filename file =
    case name $ getInfoData file of
-      NoDataRFV -> putStr $ "File: " ++ filename
-      ValidRFV name -> putStr $ name ++ " (" ++ filename ++ ")"
+      Nothing -> putStr $ "File: " ++ filename
+      Just name -> putStr $ name ++ " (" ++ filename ++ ")"
 
 -- TODO copied from elsewhere, common code
 divRoundUp :: Integral a => a -> a -> a

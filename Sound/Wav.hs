@@ -52,7 +52,7 @@ getRootChunk = do
          return chunkSize
       _ -> fail $ unexpectedMessage "RIFF or RIFX" riffHeader
 
-getFactChunk :: Get (RFV FactChunk)
+getFactChunk :: Get (Maybe FactChunk)
 getFactChunk =
    getPotential "fact" getFactChunkHelper
    where 

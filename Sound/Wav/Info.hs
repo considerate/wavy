@@ -3,12 +3,14 @@ module Sound.Wav.Info
    ( getInfoChunk
    , updateInfoChunk
    , getInfoData
+   , getMaybeInfoData
    ) where
 
 import Data.Binary (Get(..), Binary(..))
 import Data.Binary.Get
 import Data.List.Split (splitOn)
 
+import Data.Maybe (fromMaybe)
 import Data.Word
 
 import Sound.Wav.Core
@@ -22,13 +24,13 @@ updateInfoChunk updater file = updatedfile $ getInfoData file
          file { listChunk = Just (ListChunk "INFO" (Just (InfoListChunk $ updater infoData))) }
 
 getInfoData :: RiffFile -> InfoChunk
-getInfoData file = 
-   case listChunk file of
-      Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> infoData
-      _ -> infoChunkDefault
+getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
 
--- getMaybeInfoData :: RiffFile -> Maybe InfoChunk
--- getMaybeInfoData 
+getMaybeInfoData :: RiffFile -> Maybe InfoChunk
+getMaybeInfoData file = 
+   case listChunk file of
+      Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> Just infoData
+      _ -> Nothing
 
 getInfoChunk finishLocation = repeatParse infoChunkDefault finishLocation parseSection
 

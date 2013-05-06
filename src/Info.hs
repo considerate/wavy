@@ -49,7 +49,7 @@ displayRiffFile (filename, file) = do
    displayTime . audioTime $ file
    putStrLn ""
    displayFormatSection . fileFormat $ file
-   -- displayInfoSection . 
+   displayInfoSection . getMaybeInfoData $ file
 
 displayName :: String -> RiffFile -> IO ()
 displayName filename file =
@@ -87,12 +87,12 @@ prefix = ("     " ++)
 displayFormatSection :: FormatChunk -> IO ()
 displayFormatSection format = do
    putStrLn "   Format"
-   putStrLn $ prefix "Audio Format: " ++ (prettyShowAudioFormat . audioFormat $ format)
-   putStrLn $ prefix "Channels: " ++ (show . numChannels $ format)
-   putStrLn $ prefix "Sample Rate: " ++ (show . sampleRate $ format)
-   putStrLn $ prefix "Bits Per Sample: " ++ (show . bitsPerSample $ format)
-   putStrLn $ prefix "Byte Rate: " ++ (show . byteRate $ format)
-   putStrLn $ prefix "Block Alignment: " ++ (show . blockAlignment $ format)
+   putStrLn $ prefix "Audio Format: \t" ++ (prettyShowAudioFormat . audioFormat $ format)
+   putStrLn $ prefix "Channels: \t\t" ++ (show . numChannels $ format)
+   putStrLn $ prefix "Sample Rate: \t" ++ (show . sampleRate $ format)
+   putStrLn $ prefix "Bits Per Sample: \t" ++ (show . bitsPerSample $ format)
+   putStrLn $ prefix "Byte Rate: \t" ++ (show . byteRate $ format)
+   putStrLn $ prefix "Block Alignment: \t" ++ (show . blockAlignment $ format)
 
 
 infoHeader = "   INFO Metadata"
@@ -101,4 +101,38 @@ displayInfoSection :: Maybe InfoChunk -> IO ()
 displayInfoSection Nothing = putStrLn $ infoHeader ++ " (None Present in File)"
 displayInfoSection (Just infoData) = do
    putStrLn infoHeader
-   putStrLn $ prefix "I should display some information here."
+   pp archiveLocation "Archive Location"
+   pp artist "Artist"
+   pp commissionedBy "Comissioned By"
+   pp comments "Comments"
+   -- pp copyrights "Copyrights"
+   pp creationDate "Creation Date"
+   pp croppedDetails "Cropped Details"
+   pp originalDimensions "Original Dimensions"
+   -- pp dotsPerInch "Dots Per Inch"
+   -- pp engineers "Engineers"
+   pp genre "Genre"
+   -- pp keywords "Keywords"
+   pp lightness "Lightness"
+   pp originalMedium "Original Medium"
+   -- pp coloursInPalette "Colours in Palette"
+   pp originalProduct "Original Product"
+   pp subject "Subject"
+   pp creationSoftware "Creation Software"
+   pp sharpness "Sharpness"
+   pp contentSource "Content Source"
+   pp originalForm "Original Form"
+   pp technician "Technician"
+   where
+      pp = prettyShowInfo infoData
+
+prettyShowInfo :: InfoChunk -> (InfoChunk -> Maybe String) -> String -> IO ()
+prettyShowInfo chunk convert prefixWords =
+   displayIfPresent (convert chunk) $ \showData -> do
+      putStr $ prefix prefixWords
+      putStr ": "
+      putStrLn showData
+
+displayIfPresent :: (Show a) => Maybe a -> (a -> IO ()) -> IO ()
+displayIfPresent Nothing _ = return ()
+displayIfPresent (Just x) f = f x

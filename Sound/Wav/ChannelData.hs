@@ -1,9 +1,11 @@
 module Sound.Wav.ChannelData where
 
 import Data.Binary.Get
+import Data.Binary.Put
 import Data.List (transpose)
 import Data.List.Split (chunksOf)
 import Data.Word
+import Data.Int
 
 import Sound.Wav.Data
 import Sound.Wav.Core
@@ -40,3 +42,21 @@ getChannelData format chunkSize =
             -- TODO For some reason the spec wants 8 bit to be different from the rest
             -- I do not and so I am converting it
             eightBitConversion = Int8Sample . fromIntegral . (flip (-) 128)
+
+putChannelData :: WaveData -> Put
+putChannelData = sequence_ . fmap putSample . concat . transpose . fmap toSamples . toChannels
+   where
+      toSamples :: Channel -> [Sample]
+      toSamples (Channel xs) = xs
+
+      toChannels :: WaveData -> [Channel]
+      toChannels (WaveData c) = c
+
+      convertInt :: Int8 -> Word8
+      convertInt x = fromIntegral $ x + 128
+
+      putSample :: Sample -> Put
+      putSample (Int8Sample x) = putWord8 . convertInt $ x
+      putSample (Int16Sample x) = putWord16le . fromIntegral $ x
+      putSample (Int32Sample x) = putWord32le . fromIntegral $ x
+      putSample (Int64Sample x) = putWord64le . fromIntegral $ x

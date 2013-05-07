@@ -31,6 +31,7 @@ instance Binary RiffFile where
             putString "WAVE"
             putRiffSection "fmt " $ putFormatChunk (fileFormat file)
             putPossible (listChunk file) (putRiffSection "LIST" . putListChunk)
+            putRiffSection "data" $ putChannelData (waveData file)
 
       -- write the header
       -- write out each chunk one by one

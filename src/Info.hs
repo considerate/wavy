@@ -17,6 +17,7 @@ You should have such data as:
 import System.Environment (getArgs)
 import Data.Binary.Get (ByteOffset)
 import Data.Either (partitionEithers)
+import Data.List (intersperse)
 import Control.Monad (when)
 
 import Sound.Wav.AudioFormats
@@ -33,7 +34,7 @@ main = do
 handleData :: [FilePath] -> [Either (ByteOffset, String) RiffFile] -> IO ()
 handleData files parseData = do
    mapM_ handleError $ zip files errors
-   mapM_ displayRiffFile $ zip files results
+   sequence_ $ intersperse (putStrLn "") $ fmap displayRiffFile $ zip files results
    where
       (errors, results) = partitionEithers parseData
 
@@ -49,6 +50,7 @@ displayRiffFile (filename, file) = do
    displayTime . audioTime $ file
    putStrLn ""
    displayFormatSection . fileFormat $ file
+   putStrLn ""
    displayInfoSection . getMaybeInfoData $ file
 
 displayName :: String -> RiffFile -> IO ()

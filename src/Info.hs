@@ -34,9 +34,11 @@ main = do
 handleData :: [FilePath] -> [Either (ByteOffset, String) RiffFile] -> IO ()
 handleData files parseData = do
    mapM_ handleError $ zip files errors
-   sequence_ $ intersperse (putStrLn "") $ fmap displayRiffFile $ zip files results
+   sequence_ . spreadNewlines . fmap displayRiffFile $ zip files results
    where
       (errors, results) = partitionEithers parseData
+      spreadNewlines :: [IO ()] -> [IO ()]
+      spreadNewlines = intersperse $ putStrLn ""
 
 handleError :: (FilePath, (ByteOffset, String)) -> IO ()
 handleError (filename, (offset, errorMessage)) = do

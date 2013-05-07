@@ -54,14 +54,21 @@ putString = sequence_ . fmap (putWord8 . charToByte)
 -- TODO we are likely to have to add padding to this function
 -- We will have to use the byte alignment to make sure that it 
 -- comes out correct
-putRiffSection :: String -> Put -> Put
-putRiffSection ident contents = do
+putRiffSection :: FormatChunk -> String -> Put -> Put
+putRiffSection format ident contents = do
    putString ident
    putWord32le sectionSize
    putLazyByteString sectionContents
+   putPaddingZeroes (sectionSize `mod` (fromIntegral . blockAlignment $ format))
    where
-      sectionSize = fromIntegral $ L.length sectionContents
+      sectionSize :: Word32
+      sectionSize = fromIntegral rawSize
+
+      rawSize = L.length sectionContents
+      
       sectionContents = runPut contents
+
+      putPaddingZeroes n = sequence_ . take (fromIntegral n) . repeat $ putWord8 0
 
 putPossible :: Maybe a -> (a -> Put) -> Put
 putPossible = flip $ maybe (return ())

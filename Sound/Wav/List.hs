@@ -13,11 +13,11 @@ import Sound.Wav.Info
 getListChunk :: Get (Maybe ListChunk)
 getListChunk = getPotential "LIST" listSectionHelper
 
-putListChunk :: ListChunk -> Put
-putListChunk listChunk = do
+putListChunk :: FormatChunk -> ListChunk -> Put
+putListChunk format listChunk = do
    putPossible (listChunkData listChunk) $ \chunkType ->
       case chunkType of
-         InfoListChunk infoData -> putInfoData infoData
+         InfoListChunk infoData -> putInfoData format infoData
 
 listSectionHelper :: Get ListChunk
 listSectionHelper = do

@@ -24,14 +24,16 @@ ppLn = putStrLn . ppShow
 
 instance Binary RiffFile where
    -- you will have to run each chunk before writing it out
-   put file = putRiffSection "RIFF" childSections
+   put file = putRiffSection format "RIFF" childSections
       where
          childSections :: Put
          childSections = do
             putString "WAVE"
-            putRiffSection "fmt " $ putFormatChunk (fileFormat file)
-            putPossible (listChunk file) (putRiffSection "LIST" . putListChunk)
-            putRiffSection "data" $ putChannelData (waveData file)
+            putRiffSection format "fmt " $ putFormatChunk format
+            putPossible (listChunk file) ((putRiffSection format "LIST") . (putListChunk format))
+            putRiffSection format "data" $ putChannelData (waveData file)
+
+         format = fileFormat file
 
       -- write the header
       -- write out each chunk one by one

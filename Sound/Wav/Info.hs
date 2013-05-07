@@ -30,16 +30,16 @@ getInfoData :: RiffFile -> InfoChunk
 getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
 
 -- Put Possible Section (pps)
-pps :: String -> Maybe a -> (a -> Put) -> Put
-pps ident possibleData convert = 
-   putPossible possibleData $ \d -> putRiffSection ident (convert d)
+putPossibleSection :: FormatChunk -> String -> Maybe a -> (a -> Put) -> Put
+putPossibleSection format ident possibleData convert = 
+   putPossible possibleData $ \d -> putRiffSection format ident (convert d)
 
 putStrings :: [String] -> Put
 putStrings = sequence_ . intersperse (putString "; ") . fmap putString
 
 -- TODO work out what the correct output format for the integers is
-putInfoData :: InfoChunk -> Put
-putInfoData ic = do
+putInfoData :: FormatChunk -> InfoChunk -> Put
+putInfoData format ic = do
    putString "INFO"
    pps "IARL" (archiveLocation ic) putString
    pps "IART" (artist ic) putString
@@ -65,6 +65,8 @@ putInfoData ic = do
    pps "ISCR" (contentSource ic) putString
    pps "ISRF" (originalForm ic) putString
    pps "ITCH" (technician ic) putString
+   where
+      pps = putPossibleSection format
 
 getMaybeInfoData :: RiffFile -> Maybe InfoChunk
 getMaybeInfoData file = 

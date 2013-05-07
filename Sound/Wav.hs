@@ -3,6 +3,7 @@ module Sound.Wav where
 
 import Data.Binary
 import Data.Binary.Get
+import Data.Binary.Put
 import Data.Int
 import Control.Monad (when)
 
@@ -22,7 +23,17 @@ ppLn :: Show a => a -> IO ()
 ppLn = putStrLn . ppShow
 
 instance Binary RiffFile where
-   put _ = error ""
+   -- you will have to run each chunk before writing it out
+   put file = putRiffSection "RIFF" childSections
+      where
+         childSections :: Put
+         childSections = do
+            putString "WAVE"
+            putRiffSection "fmt " $ putFormatChunk (fileFormat file)
+            putPossible (listChunk file) (putRiffSection "LIST" . putListChunk)
+
+      -- write the header
+      -- write out each chunk one by one
    get = do
       chunkSize <- getRootChunk
       formatChunk <- getFormatChunk
@@ -80,3 +91,12 @@ getFormatChunk = do
    bitsPerSample <- getWord16le
    skipToChunkBoundary startLocation chunkSize
    return $ FormatChunk chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample
+
+putFormatChunk :: FormatChunk -> Put
+putFormatChunk format = do
+   putWord16le . putAudioFormat . audioFormat $ format
+   putWord16le . numChannels $ format
+   putWord32le . sampleRate $ format
+   putWord32le . byteRate $ format
+   putWord16le . blockAlignment $ format
+   putWord16le . bitsPerSample $ format

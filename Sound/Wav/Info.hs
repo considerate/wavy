@@ -3,11 +3,14 @@ module Sound.Wav.Info
    ( getInfoChunk
    , updateInfoChunk
    , getInfoData
+   , putInfoData
    , getMaybeInfoData
    ) where
 
 import Data.Binary (Get(..), Binary(..))
 import Data.Binary.Get
+import Data.Binary.Put
+import Data.List (intersperse)
 import Data.List.Split (splitOn)
 
 import Data.Maybe (fromMaybe)
@@ -25,6 +28,43 @@ updateInfoChunk updater file = updatedfile $ getInfoData file
 
 getInfoData :: RiffFile -> InfoChunk
 getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
+
+-- Put Possible Section (pps)
+pps :: String -> Maybe a -> (a -> Put) -> Put
+pps ident possibleData convert = 
+   putPossible possibleData $ \d -> putRiffSection ident (convert d)
+
+putStrings :: [String] -> Put
+putStrings = sequence_ . intersperse (putString "; ") . fmap putString
+
+-- TODO work out what the correct output format for the integers is
+putInfoData :: InfoChunk -> Put
+putInfoData ic = do
+   putString "INFO"
+   pps "IARL" (archiveLocation ic) putString
+   pps "IART" (artist ic) putString
+   pps "ICMS" (commissionedBy ic) putString
+   pps "ICMT" (comments ic) putString
+   pps "ICOP" (copyrights ic) putStrings
+   pps "ICRD" (creationDate ic) putString
+   pps "ICRP" (croppedDetails ic) putString
+   pps "IDIM" (originalDimensions ic) putString
+   pps "IDPI" (dotsPerInch ic) (putWord32le . fromIntegral)
+   pps "IENG" (engineers ic) putStrings
+   pps "IGNR" (genre ic) putString
+   pps "IKEY" (keywords ic) putStrings
+   pps "ILGT" (lightness ic) putString
+   pps "IMED" (originalMedium ic) putString
+   pps "INAM" (name ic) putString
+   pps "IPLT" (coloursInPalette ic) (putWord32le . fromIntegral)
+   pps "IPRD" (originalProduct ic) putString
+   pps "ISBJ" (subject ic) putString
+   -- TODO put our own name in here, then make it optional
+   pps "ISFT" (Just "wavy (Haskell)") putString
+   pps "ISHP" (sharpness ic) putString
+   pps "ISCR" (contentSource ic) putString
+   pps "ISRF" (originalForm ic) putString
+   pps "ITCH" (technician ic) putString
 
 getMaybeInfoData :: RiffFile -> Maybe InfoChunk
 getMaybeInfoData file = 

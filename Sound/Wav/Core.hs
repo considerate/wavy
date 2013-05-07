@@ -4,9 +4,12 @@ import Sound.Wav.Data
 
 import Control.Monad (replicateM)
 import Data.Binary.Get
+import Data.Binary.Put
 import Data.Char
 import Data.Maybe (Maybe(..))
 import Data.Word
+
+import qualified Data.ByteString.Lazy as L
 
 -- Parsing bytes
 byteToChar :: Word8 -> Char
@@ -43,4 +46,23 @@ getPotential ident getter = lookAheadM $ do
    if infoHeader /= ident
       then return Nothing
       else fmap Just getter
+
+-- Put Commands
+putString :: String -> Put
+putString = sequence_ . fmap (putWord8 . charToByte)
+
+-- TODO we are likely to have to add padding to this function
+-- We will have to use the byte alignment to make sure that it 
+-- comes out correct
+putRiffSection :: String -> Put -> Put
+putRiffSection ident contents = do
+   putString ident
+   putWord32le sectionSize
+   putLazyByteString sectionContents
+   where
+      sectionSize = fromIntegral $ L.length sectionContents
+      sectionContents = runPut contents
+
+putPossible :: Maybe a -> (a -> Put) -> Put
+putPossible = flip $ maybe (return ())
 

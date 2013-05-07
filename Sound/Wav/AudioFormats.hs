@@ -7,12 +7,14 @@ module Sound.Wav.AudioFormats
    ( AudioFormatData
    , AudioFormat(..)
    , getAudioFormat
+   , putAudioFormat
    , prettyShowAudioFormat
    )
  where
 
 import Data.Word
 import Data.Maybe (fromMaybe)
+import Data.Tuple (swap)
 
 import qualified Data.Map as M
 
@@ -23,6 +25,17 @@ getAudioFormat key = fromMaybe defaultValue possibleKey
    where
       possibleKey = M.lookup key audioFormatMap
       defaultValue = UnknownFormat key
+
+putAudioFormat :: AudioFormat -> AudioFormatData
+putAudioFormat (UnknownFormat v) = v
+putAudioFormat key = fromMaybe defaultValue possibleKey
+   where
+      possibleKey = M.lookup key reverseAudioFormatMap
+      -- Unknown Code
+      defaultValue = 0xe708
+
+reverseAudioFormatMap :: M.Map AudioFormat AudioFormatData
+reverseAudioFormatMap = M.fromList $ fmap swap audioCodecs
 
 audioFormatMap :: M.Map AudioFormatData AudioFormat
 audioFormatMap = M.fromList audioCodecs

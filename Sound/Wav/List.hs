@@ -2,6 +2,7 @@ module Sound.Wav.List where
 
 import Data.Binary (Get(..), Binary(..))
 import Data.Binary.Get
+import Data.Binary.Put
 
 import Data.Word
 
@@ -11,6 +12,12 @@ import Sound.Wav.Info
 
 getListChunk :: Get (Maybe ListChunk)
 getListChunk = getPotential "LIST" listSectionHelper
+
+putListChunk :: ListChunk -> Put
+putListChunk listChunk = do
+   putPossible (listChunkData listChunk) $ \chunkType ->
+      case chunkType of
+         InfoListChunk infoData -> putInfoData infoData
 
 listSectionHelper :: Get ListChunk
 listSectionHelper = do

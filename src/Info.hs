@@ -105,17 +105,17 @@ displayInfoSection (Just infoData) = do
    pp artist "Artist"
    pp commissionedBy "Comissioned By"
    pp comments "Comments"
-   -- pp copyrights "Copyrights"
+   ppList copyrights "Copyrights"
    pp creationDate "Creation Date"
    pp croppedDetails "Cropped Details"
    pp originalDimensions "Original Dimensions"
-   -- pp dotsPerInch "Dots Per Inch"
-   -- pp engineers "Engineers"
+   ppShow dotsPerInch "Dots Per Inch"
+   ppList engineers "Engineers"
    pp genre "Genre"
-   -- pp keywords "Keywords"
+   ppList keywords "Keywords"
    pp lightness "Lightness"
    pp originalMedium "Original Medium"
-   -- pp coloursInPalette "Colours in Palette"
+   ppShow coloursInPalette "Colours in Palette"
    pp originalProduct "Original Product"
    pp subject "Subject"
    pp creationSoftware "Creation Software"
@@ -125,6 +125,15 @@ displayInfoSection (Just infoData) = do
    pp technician "Technician"
    where
       pp = prettyShowInfo infoData
+      ppList = prettyShowListInfo infoData
+      ppShow = prettyShowConvert infoData
+
+prettyShowConvert :: (Show a) => InfoChunk -> (InfoChunk -> Maybe a) -> String -> IO ()
+prettyShowConvert chunk convert prefixWords =
+   displayIfPresent (convert chunk) $ \showData -> do
+      putStr $ prefix prefixWords
+      putStr ": "
+      putStrLn . show $ showData
 
 prettyShowInfo :: InfoChunk -> (InfoChunk -> Maybe String) -> String -> IO ()
 prettyShowInfo chunk convert prefixWords =
@@ -132,6 +141,13 @@ prettyShowInfo chunk convert prefixWords =
       putStr $ prefix prefixWords
       putStr ": "
       putStrLn showData
+
+prettyShowListInfo :: InfoChunk -> (InfoChunk -> Maybe [String]) -> String -> IO ()
+prettyShowListInfo chunk convert prefixWords = 
+   displayIfPresent (convert chunk) $ \showData -> do
+      putStr $ prefix prefixWords
+      putStr ": "
+      sequence_ $ fmap (\x -> putStrLn $ prefix " - " ++ x) showData
 
 displayIfPresent :: (Show a) => Maybe a -> (a -> IO ()) -> IO ()
 displayIfPresent Nothing _ = return ()

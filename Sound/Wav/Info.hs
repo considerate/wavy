@@ -30,43 +30,45 @@ getInfoData :: RiffFile -> InfoChunk
 getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
 
 -- Put Possible Section (pps)
-putPossibleSection :: FormatChunk -> String -> Maybe a -> (a -> Put) -> Put
-putPossibleSection format ident possibleData convert = 
-   putPossible possibleData $ \d -> putRiffSection format ident (convert d)
+putPossibleSection :: BlockAlignment -> String -> Maybe a -> (a -> Put) -> Put
+putPossibleSection alignment ident possibleData convert = 
+   putPossible possibleData $ \d -> putRiffSection 2 ident (convert d)
+
+putPaddedString x = putString x >> putWord8 0 
 
 putStrings :: [String] -> Put
-putStrings = sequence_ . intersperse (putString "; ") . fmap putString
+putStrings xs = (sequence_ . intersperse (putString "; ") . fmap putString $ xs) >> putWord8 0
 
 -- TODO work out what the correct output format for the integers is
-putInfoData :: FormatChunk -> InfoChunk -> Put
-putInfoData format ic = do
+putInfoData :: BlockAlignment -> InfoChunk -> Put
+putInfoData alignment ic = do
    putString "INFO"
-   pps "IARL" (archiveLocation ic) putString
-   pps "IART" (artist ic) putString
-   pps "ICMS" (commissionedBy ic) putString
-   pps "ICMT" (comments ic) putString
+   pps "IARL" (archiveLocation ic) putPaddedString
+   pps "IART" (artist ic) putPaddedString
+   pps "ICMS" (commissionedBy ic) putPaddedString
+   pps "ICMT" (comments ic) putPaddedString
    pps "ICOP" (copyrights ic) putStrings
-   pps "ICRD" (creationDate ic) putString
-   pps "ICRP" (croppedDetails ic) putString
-   pps "IDIM" (originalDimensions ic) putString
+   pps "ICRD" (creationDate ic) putPaddedString
+   pps "ICRP" (croppedDetails ic) putPaddedString
+   pps "IDIM" (originalDimensions ic) putPaddedString
    pps "IDPI" (dotsPerInch ic) (putWord32le . fromIntegral)
    pps "IENG" (engineers ic) putStrings
-   pps "IGNR" (genre ic) putString
+   pps "IGNR" (genre ic) putPaddedString
    pps "IKEY" (keywords ic) putStrings
-   pps "ILGT" (lightness ic) putString
-   pps "IMED" (originalMedium ic) putString
-   pps "INAM" (name ic) putString
+   pps "ILGT" (lightness ic) putPaddedString
+   pps "IMED" (originalMedium ic) putPaddedString
+   pps "INAM" (name ic) putPaddedString
    pps "IPLT" (coloursInPalette ic) (putWord32le . fromIntegral)
-   pps "IPRD" (originalProduct ic) putString
-   pps "ISBJ" (subject ic) putString
+   pps "IPRD" (originalProduct ic) putPaddedString
+   pps "ISBJ" (subject ic) putPaddedString
    -- TODO put our own name in here, then make it optional
-   pps "ISFT" (Just "wavy (Haskell)") putString
-   pps "ISHP" (sharpness ic) putString
-   pps "ISCR" (contentSource ic) putString
-   pps "ISRF" (originalForm ic) putString
-   pps "ITCH" (technician ic) putString
+   pps "ISFT" (Just "wavy (Haskell)") putPaddedString
+   pps "ISHP" (sharpness ic) putPaddedString
+   pps "ISCR" (contentSource ic) putPaddedString
+   pps "ISRF" (originalForm ic) putPaddedString
+   pps "ITCH" (technician ic) putPaddedString
    where
-      pps = putPossibleSection format
+      pps = putPossibleSection alignment
 
 getMaybeInfoData :: RiffFile -> Maybe InfoChunk
 getMaybeInfoData file = 
@@ -84,7 +86,7 @@ repeatParse initial stopLength step = go initial
          readAmount <- bytesRead
          if (fromIntegral readAmount :: Word64) >= stopLength
             then return next
-            else repeatParse next stopLength step
+            else go next
 
 parseSection :: InfoChunk -> Get InfoChunk
 parseSection initial = do 
@@ -118,8 +120,7 @@ parseSection initial = do
       _ -> getWord32le >>= skip . makeEven . fromIntegral >> return initial
 
 parseInfoString :: Get String
-parseInfoString = do
-   chunkSize <- getWord32le
+parseInfoString = wrapRiffSection $ \chunkSize -> do
    infoString <- getNChars (fromIntegral . makeEven $ chunkSize)
    return $ dropTrailingNull infoString
 

@@ -25,8 +25,7 @@ data RiffFile = RiffFile
 
 data FormatChunk = FormatChunk
    -- The size of the rest of the chunk after this point...is this data useful in the final result?
-   { sectionSize :: ChunkSize 
-   , audioFormat :: AudioFormat -- Values other than one indicate some form of compression
+   { audioFormat :: AudioFormat -- Values other than one indicate some form of compression
    , numChannels :: Word16 
    , sampleRate :: SampleRate
    , byteRate :: ByteRate

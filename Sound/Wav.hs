@@ -24,16 +24,17 @@ ppLn = putStrLn . ppShow
 
 instance Binary RiffFile where
    -- you will have to run each chunk before writing it out
-   put file = putRiffSection format "RIFF" childSections
+   put file = putRiffSection alignment "RIFF" childSections
       where
          childSections :: Put
          childSections = do
             putString "WAVE"
-            putRiffSection format "fmt " $ putFormatChunk format
-            putPossible (listChunk file) ((putRiffSection format "LIST") . (putListChunk format))
-            putRiffSection format "data" $ putChannelData (waveData file)
+            putRiffSection 2 "fmt " $ putFormatChunk format
+            putPossible (listChunk file) ((putRiffSection 2 "LIST") . (putListChunk 2))
+            putRiffSection alignment "data" $ putChannelData (waveData file)
 
          format = fileFormat file
+         alignment = blockAlignment format
 
       -- write the header
       -- write out each chunk one by one
@@ -71,29 +72,19 @@ getFactChunk =
    getPotential "fact" getFactChunkHelper
    where 
       getFactChunkHelper :: Get FactChunk
-      getFactChunkHelper = do
-         chunkSize <- getWord32le
-         return . FactChunk =<< getWord32le
-
-skipToChunkBoundary :: Int64 -> Word32 -> Get ()
-skipToChunkBoundary start chunkSize = bytesRead >>= skip . bytesToSkip 
-   where
-      bytesToSkip :: Int64 -> Int
-      bytesToSkip currentLocation = fromIntegral $ start + (fromIntegral chunkSize) - currentLocation
+      getFactChunkHelper = wrapRiffSection . const $ return . FactChunk =<< getWord32le
 
 getFormatChunk :: Get FormatChunk
 getFormatChunk = do
    expectIdentifier "fmt "
-   chunkSize <- getWord32le
-   startLocation <- bytesRead
-   audio <- fmap getAudioFormat getWord16le
-   channelCount <- getWord16le
-   sampleRateData <- getWord32le
-   byteRateData <- getWord32le
-   blockAlign <- getWord16le
-   bitsPerSample <- getWord16le
-   skipToChunkBoundary startLocation chunkSize
-   return $ FormatChunk chunkSize audio channelCount sampleRateData byteRateData blockAlign bitsPerSample
+   wrapRiffSection . const $ do
+      audio <- fmap getAudioFormat getWord16le
+      channelCount <- getWord16le
+      sampleRateData <- getWord32le
+      byteRateData <- getWord32le
+      blockAlign <- getWord16le
+      bitsPerSample <- getWord16le
+      return $ FormatChunk audio channelCount sampleRateData byteRateData blockAlign bitsPerSample
 
 putFormatChunk :: FormatChunk -> Put
 putFormatChunk format = do

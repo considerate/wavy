@@ -2,12 +2,13 @@ module Sound.Wav.Core where
 
 import Sound.Wav.Data
 
-import Control.Monad (replicateM)
+import Control.Monad (replicateM, when)
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Char
 import Data.Maybe (Maybe(..))
 import Data.Word
+import Data.Int (Int64)
 
 import qualified Data.ByteString.Lazy as L
 
@@ -47,6 +48,22 @@ getPotential ident getter = lookAheadM $ do
       then return Nothing
       else fmap Just getter
 
+wrapRiffSection :: (ChunkSize -> Get a) -> Get a
+wrapRiffSection getter = do
+   chunkSize <- getWord32le
+   startLocation <- bytesRead
+   result <- getter chunkSize
+   skipToChunkBoundary startLocation chunkSize
+   return result
+
+skipToChunkBoundary :: Int64 -> Word32 -> Get ()
+skipToChunkBoundary start chunkSize = do
+      readAmount <- bytesRead 
+      when (bytesToSkip readAmount > 0) $ skip (bytesToSkip readAmount)
+   where
+      bytesToSkip :: Int64 -> Int
+      bytesToSkip currentLocation = fromIntegral $ start + (fromIntegral chunkSize) - currentLocation
+
 -- Put Commands
 putString :: String -> Put
 putString = sequence_ . fmap (putWord8 . charToByte)
@@ -54,15 +71,19 @@ putString = sequence_ . fmap (putWord8 . charToByte)
 -- TODO we are likely to have to add padding to this function
 -- We will have to use the byte alignment to make sure that it 
 -- comes out correct
-putRiffSection :: FormatChunk -> String -> Put -> Put
-putRiffSection format ident contents = do
+putRiffSection :: Word16 -> String -> Put -> Put
+putRiffSection alignment ident contents = do
    putString ident
    putWord32le sectionSize
    putLazyByteString sectionContents
-   putPaddingZeroes (sectionSize `mod` (fromIntegral . blockAlignment $ format))
+   putPaddingZeroes amountToPad
    where
+      amountToPad = if bytesOff /= 0 then blockSize - bytesOff else 0
+      bytesOff = sectionSize `mod` blockSize
       sectionSize :: Word32
       sectionSize = fromIntegral rawSize
+
+      blockSize = fromIntegral alignment
 
       rawSize = L.length sectionContents
       

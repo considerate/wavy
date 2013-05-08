@@ -13,15 +13,14 @@ import Sound.Wav.Info
 getListChunk :: Get (Maybe ListChunk)
 getListChunk = getPotential "LIST" listSectionHelper
 
-putListChunk :: FormatChunk -> ListChunk -> Put
-putListChunk format listChunk = do
+putListChunk :: BlockAlignment -> ListChunk -> Put
+putListChunk alignment listChunk = do
    putPossible (listChunkData listChunk) $ \chunkType ->
       case chunkType of
-         InfoListChunk infoData -> putInfoData format infoData
+         InfoListChunk infoData -> putInfoData alignment infoData
 
 listSectionHelper :: Get ListChunk
-listSectionHelper = do
-   chunkSize <- getWord32le
+listSectionHelper = wrapRiffSection $ \chunkSize -> do
    startBytes <- bytesRead
    listName <- getIdentifier
    case listName of
@@ -29,7 +28,7 @@ listSectionHelper = do
          infoSection <- getInfoChunk (toWord64 chunkSize + toWord64 startBytes)
          return . ListChunk listName $ Just (InfoListChunk infoSection)
       -- TODO we have to skip over the entire section here
-      _ -> getWord32le >>= skip . makeEven . fromIntegral >> (return . ListChunk listName $ Nothing)
+      _ -> return . ListChunk listName $ Nothing
    where
       toWord64 :: Integral a => a -> Word64
       toWord64 = fromIntegral

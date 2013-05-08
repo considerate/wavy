@@ -28,11 +28,11 @@ license:             BSD3
 license-file:        LICENSE
 
 -- The package author(s).
-author:              Robert Massaioli
+author:              Robert Massaioli <robertmassaioli@gmail.com>
 
 -- An email address to which users can send suggestions, bug reports, and 
 -- patches.
-maintainer:          robertmassaioli@gmail.com
+maintainer:          Robert Massaioli <robertmassaioli@gmail.com>
 
 -- A copyright notice.
 -- copyright:           

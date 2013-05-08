@@ -15,21 +15,17 @@ You should have such data as:
 -}
 
 import System.Environment (getArgs)
-import Data.Binary.Get (ByteOffset)
 import Data.Either (partitionEithers)
 import Data.List (intersperse)
 import Control.Monad (when)
 
-import Sound.Wav.AudioFormats
-import Sound.Wav.Data
-import Sound.Wav.Info
 import Sound.Wav
 
 main = do 
    files <- getArgs
    if length files == 0
       then putStrLn "No files were given, nothing was parsed."
-      else mapM decodeRiffFileOrFail files >>= handleData files
+      else mapM decodeWaveFileOrFail files >>= handleData files
 
 handleData :: [FilePath] -> [Either (ByteOffset, String) RiffFile] -> IO ()
 handleData files parseData = do

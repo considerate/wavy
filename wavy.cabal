@@ -51,16 +51,15 @@ bug-reports:         http://bitbucket.org/robertmassaioli/wavy/issues
 
 library
   -- Modules exported by the library.
-  exposed-modules:     Sound.Wav, 
-                       Sound.Wav.Data,
-                       Sound.Wav.AudioFormats,
-                       Sound.Wav.Info
+  exposed-modules:     Sound.Wav
   
   -- Modules included in this library but not exported.
-  other-modules:       Sound.Wav.Core,
-                       Sound.Wav.ChannelData,
-                       --Sound.Wav.Info,
-                       Sound.Wav.List
+  other-modules:       Sound.Wav.Core
+                       , Sound.Wav.ChannelData
+                       , Sound.Wav.List
+                       , Sound.Wav.Info
+                       , Sound.Wav.Data
+                       , Sound.Wav.AudioFormats
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*
@@ -68,14 +67,12 @@ library
                        , bytestring
                        , split
                        , containers
-                       , pretty-show
 
 executable show-wav-data
    hs-source-dirs: src
    main-is: Main.hs
   
    build-depends:       base ==4.5.*
-                          , binary
                           , split
                           , pretty-show
                           , wavy
@@ -86,4 +83,3 @@ executable wavinfo
 
    build-depends:       base ==4.5.*
                         , wavy
-                        , binary

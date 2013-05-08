@@ -1,5 +1,38 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Sound.Wav where
+module Sound.Wav
+   -- Reading Riff Files
+   ( decodeWave
+   , decodeWaveFile
+   , decodeWaveFileOrFail
+
+   -- Writing Riff Files
+   , encodeWaveFile
+
+   -- Important data
+   , RiffFile(..)
+   , FormatChunk(..)
+   , FactChunk(..)
+   , ListChunk(..)
+   , ListChunkType(..)
+   , InfoChunk(..)
+   , infoChunkDefault
+   , WaveData(..)
+   , Channel(..)
+   , Sample(..)
+
+   -- Info Editing
+   , getInfoData
+   , getMaybeInfoData
+   , updateInfoChunk
+
+   -- Exported From Binary
+   , ByteOffset
+
+   -- Audio Formats
+   , prettyShowAudioFormat
+   , AudioFormat(..)
+
+   ) where
 
 import Data.Binary
 import Data.Binary.Get
@@ -10,17 +43,25 @@ import Control.Monad (when)
 import Sound.Wav.Core
 import Sound.Wav.Data
 import Sound.Wav.List
+import Sound.Wav.Info
 import Sound.Wav.ChannelData
 import Sound.Wav.AudioFormats
 
-import Text.Show.Pretty
+import qualified Data.ByteString.Lazy as L
 
-decodeRiffFileOrFail :: FilePath -> IO (Either (ByteOffset, String) RiffFile)
-decodeRiffFileOrFail = decodeFileOrFail
+-- Reading Functions
+decodeWave :: L.ByteString -> RiffFile
+decodeWave = decode
 
--- TODO remove this helper function
-ppLn :: Show a => a -> IO ()
-ppLn = putStrLn . ppShow
+decodeWaveFile :: FilePath -> IO RiffFile
+decodeWaveFile = decodeFile
+
+decodeWaveFileOrFail :: FilePath -> IO (Either (ByteOffset, String) RiffFile)
+decodeWaveFileOrFail = decodeFileOrFail
+
+-- Writing Functions
+encodeWaveFile :: FilePath -> RiffFile -> IO ()
+encodeWaveFile = encodeFile
 
 instance Binary RiffFile where
    -- you will have to run each chunk before writing it out

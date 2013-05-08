@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Sound.Wav.Info 
    ( getInfoChunk
+   , putInfoChunk
    , updateInfoChunk
    , getInfoData
-   , putInfoData
    , getMaybeInfoData
    ) where
 
@@ -29,6 +29,12 @@ updateInfoChunk updater file = updatedfile $ getInfoData file
 getInfoData :: RiffFile -> InfoChunk
 getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
 
+getMaybeInfoData :: RiffFile -> Maybe InfoChunk
+getMaybeInfoData file = 
+   case listChunk file of
+      Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> Just infoData
+      _ -> Nothing
+
 -- Put Possible Section (pps)
 putPossibleSection :: BlockAlignment -> String -> Maybe a -> (a -> Put) -> Put
 putPossibleSection alignment ident possibleData convert = 
@@ -40,8 +46,8 @@ putStrings :: [String] -> Put
 putStrings xs = (sequence_ . intersperse (putString "; ") . fmap putString $ xs) >> putWord8 0
 
 -- TODO work out what the correct output format for the integers is
-putInfoData :: BlockAlignment -> InfoChunk -> Put
-putInfoData alignment ic = do
+putInfoChunk :: BlockAlignment -> InfoChunk -> Put
+putInfoChunk alignment ic = do
    putString "INFO"
    pps "IARL" (archiveLocation ic) putPaddedString
    pps "IART" (artist ic) putPaddedString
@@ -69,12 +75,6 @@ putInfoData alignment ic = do
    pps "ITCH" (technician ic) putPaddedString
    where
       pps = putPossibleSection alignment
-
-getMaybeInfoData :: RiffFile -> Maybe InfoChunk
-getMaybeInfoData file = 
-   case listChunk file of
-      Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> Just infoData
-      _ -> Nothing
 
 getInfoChunk finishLocation = repeatParse infoChunkDefault finishLocation parseSection
 

@@ -17,7 +17,7 @@ putListChunk :: BlockAlignment -> ListChunk -> Put
 putListChunk alignment listChunk = do
    putPossible (listChunkData listChunk) $ \chunkType ->
       case chunkType of
-         InfoListChunk infoData -> putInfoData alignment infoData
+         InfoListChunk infoData -> putInfoChunk alignment infoData
 
 listSectionHelper :: Get ListChunk
 listSectionHelper = wrapRiffSection $ \chunkSize -> do

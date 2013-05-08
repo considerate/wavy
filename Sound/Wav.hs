@@ -1,14 +1,18 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Sound.Wav
-   -- Reading Riff Files
-   ( decodeWave
+
+-- | Everything about WAVE files is contained here: reading, editing and writing the data
+-- within is all possible in this module.
+module Sound.Wav (
+   -- * Reading Riff Files
+   -- | These functions allow you to read WAVE data from bytestrings and the filesystem. 
+   decodeWave
    , decodeWaveFile
    , decodeWaveFileOrFail
 
-   -- Writing Riff Files
+   -- * Writing Riff Files
    , encodeWaveFile
 
-   -- Important data
+   -- * Important data
    , RiffFile(..)
    , FormatChunk(..)
    , FactChunk(..)
@@ -20,17 +24,17 @@ module Sound.Wav
    , Channel(..)
    , Sample(..)
 
-   -- Info Editing
+   -- * Info Editing and Retrieval
    , getInfoData
    , getMaybeInfoData
    , updateInfoChunk
 
-   -- Exported From Binary
-   , ByteOffset
-
-   -- Audio Formats
+   -- * Audio Formats
    , prettyShowAudioFormat
    , AudioFormat(..)
+
+   -- * Exported From Other Classes
+   , ByteOffset
 
    ) where
 
@@ -50,17 +54,37 @@ import Sound.Wav.AudioFormats
 import qualified Data.ByteString.Lazy as L
 
 -- Reading Functions
-decodeWave :: L.ByteString -> RiffFile
+
+-- | Decodes a lazy bytestring into a RiffFile.
+decodeWave
+   :: L.ByteString   -- ^ The bytestring to attempt to parse.
+   -> RiffFile       -- ^ The returned RiffFile containing WAVE data.
 decodeWave = decode
 
-decodeWaveFile :: FilePath -> IO RiffFile
+-- | Give this function the path to a WAVE file and it will parse it into our internal
+-- | representation.
+decodeWaveFile 
+   :: FilePath       -- ^ The location of the WAVE file.
+   -> IO RiffFile    -- ^ The returned RiffFile containing WAVE data.
 decodeWaveFile = decodeFile
 
-decodeWaveFileOrFail :: FilePath -> IO (Either (ByteOffset, String) RiffFile)
+-- | Give this function the path to a WAVE file and it will Either return an error or a
+-- RiffFile containing WAVE data. This does the exact same thing as decodeWaveFile except
+-- that, instead of failing on an error, it returns the error in an either.
+decodeWaveFileOrFail 
+   :: FilePath                                  -- ^ The location of the file that contains WAVE data.
+   -> IO (Either (ByteOffset, String) RiffFile) -- ^ The error (left) or successful result (right).
 decodeWaveFileOrFail = decodeFileOrFail
 
 -- Writing Functions
-encodeWaveFile :: FilePath -> RiffFile -> IO ()
+
+-- | Outputs a WAVE file representation to a file (that can then be understood by other
+-- WAVE file reading programs). The output of this function should fully comply to the
+-- WAVE specifications.
+encodeWaveFile 
+   :: FilePath -- ^ The file to dump the WAVE data.
+   -> RiffFile -- ^ The internal representation of a WAVE file.
+   -> IO ()    -- ^ This is performed inside an IO action.
 encodeWaveFile = encodeFile
 
 instance Binary RiffFile where

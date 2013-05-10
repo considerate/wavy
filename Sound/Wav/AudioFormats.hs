@@ -3,6 +3,12 @@
  - http://www.sno.phy.queensu.ca/~phil/exiftool/TagNames/RIFF.html
  -}
 
+-- | The Data section of WAVE files can contain many different types of encoded data. It
+-- can contain everytihng from raw PCM data (which this library uses as it's base
+-- encoding) to a development encoding. The encoding that was used is saved in the Format
+-- Chunk of the WAVE file and this module is responsible for making that one piece of data
+-- easier to understand and deal with. We provide a number of helper functions to make the
+-- AudioFormat easier to understand.
 module Sound.Wav.AudioFormats 
    ( AudioFormatData
    , AudioFormat(..)
@@ -18,15 +24,25 @@ import Data.Tuple (swap)
 
 import qualified Data.Map as M
 
+-- | A representation of the AudioFormatData as seen in the Format Section in the header
+-- of a WAVE file.
 type AudioFormatData = Word16
 
-getAudioFormat :: AudioFormatData -> AudioFormat
+-- | Extracts the actual AudioFormat from the raw AudioFormatData
+getAudioFormat 
+   :: AudioFormatData -- ^ The raw audio format data, likely taken from the header of a WAVE file.
+   -> AudioFormat     -- ^ The actual AudioFormat as understood by wavy.
 getAudioFormat key = fromMaybe defaultValue possibleKey  
    where
       possibleKey = M.lookup key audioFormatMap
       defaultValue = UnknownFormat key
 
-putAudioFormat :: AudioFormat -> AudioFormatData
+-- | A conversion function from a known AudioFormat to it's representation as
+-- AudioFormatData. This function is useful if you are planning on writing out your WAVE
+-- data and sharing it.
+putAudioFormat 
+   :: AudioFormat     -- ^ The audio format you wish to convert.
+   -> AudioFormatData -- ^ The raw representation of the Audio Format.
 putAudioFormat (UnknownFormat v) = v
 putAudioFormat key = fromMaybe defaultValue possibleKey
    where
@@ -287,6 +303,13 @@ audioCodecs =
    , (0xffff, Development)
    ]
 
+-- | This is a massive data structure that contains every single different audio format
+-- that I could find. It allows us to represent AudioFormats in a very human readable and
+-- easy to understand manner insize wavy. This data structure will be constantly growing
+-- and changing. Do not be surprised if names change or elements are added. Because this
+-- list is always growing we have an UnknownFormat element that can wrap and
+-- AudioFormatData so that, in the event that we do not know about an audio format. You
+-- can still deal with it naturally.
 data AudioFormat
    = MicrosoftPCM
    | MicrosoftADPCM
@@ -523,7 +546,12 @@ data AudioFormat
    | UnknownFormat AudioFormatData
    deriving(Show, Eq, Ord)
 
-prettyShowAudioFormat :: AudioFormat -> String
+-- | This function is reponsible for converting an AudioFormat into a representation that
+-- is human readable and what people would expect. It is useful if you need to display
+-- your AudioFormat to a human and you want to know, quickly, what to call it.
+prettyShowAudioFormat 
+   :: AudioFormat -- ^ The audio format that you wish to display to a human.
+   -> String      -- ^ The human readable description of this audio format.
 prettyShowAudioFormat (UnknownFormat formatNumber) = 
    "Unknown Audio Format (Code: " ++ show formatNumber ++ ")"
 prettyShowAudioFormat xs = fromMaybe (noPretty xs) $ M.lookup xs audioFormatShow

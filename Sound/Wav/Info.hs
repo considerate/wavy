@@ -1,4 +1,8 @@
 {-# LANGUAGE FlexibleInstances #-}
+
+-- | The Sound.Wav.Info module is responsible for abolutely everything in the INFO
+-- Metadata chunk of a RIFF file. It allows you to read, write and modify that chunk of
+-- data easily.
 module Sound.Wav.Info 
    ( getInfoChunk
    , putInfoChunk
@@ -20,16 +24,29 @@ import Sound.Wav.Core
 import Sound.Wav.Data
 
 -- TODO the code in this function could be greatly cleaned up via lenses
-updateInfoChunk :: (InfoChunk -> InfoChunk) -> RiffFile -> RiffFile
+-- | Update the INFO metadata chunk inside an existing RiffFile. This will allow you to
+-- edit the metadata inside a file.
+updateInfoChunk 
+   :: (InfoChunk -> InfoChunk)   -- ^ The conversion function from original to new metadata.
+   -> RiffFile                   -- ^ The input RiffFile that will be modified.
+   -> RiffFile                   -- ^ A new RiffFile that contains the updated INFO section.
 updateInfoChunk updater file = updatedfile $ getInfoData file
    where
       updatedfile infoData = 
          file { listChunk = Just (ListChunk "INFO" (Just (InfoListChunk $ updater infoData))) }
 
-getInfoData :: RiffFile -> InfoChunk
+-- | You want to be able to get the info chunk from your RiffFiles, however, if the info
+-- chunk does not exist then you will be provided with a default info chunk.
+getInfoData 
+   :: RiffFile    -- ^ The file that you wish to extract INFO metadata from.
+   -> InfoChunk   -- ^ The info metadata.
 getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
 
-getMaybeInfoData :: RiffFile -> Maybe InfoChunk
+-- | Attempts to get the info chunk out of your RiffFile but if it does not exist then it
+-- returns Nothing. This way you know if you actually have anything that you can use.
+getMaybeInfoData 
+   :: RiffFile          -- ^ The file that you wish to extract INFO metadata from.
+   -> Maybe InfoChunk   -- ^ A potential info chunk if it exists.
 getMaybeInfoData file = 
    case listChunk file of
       Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> Just infoData
@@ -46,7 +63,12 @@ putStrings :: [String] -> Put
 putStrings xs = (sequence_ . intersperse (putString "; ") . fmap putString $ xs) >> putWord8 0
 
 -- TODO work out what the correct output format for the integers is
-putInfoChunk :: BlockAlignment -> InfoChunk -> Put
+-- | This allows you to write an infoChunk out in the format that it should appear in a
+-- file. 
+putInfoChunk 
+   :: BlockAlignment    -- The INFO chunk must be aligned and this says how many bytes it should be aligned to
+   -> InfoChunk         -- ^ The info chunk that you wish to write out.
+   -> Put
 putInfoChunk alignment ic = do
    putString "INFO"
    pps "IARL" (archiveLocation ic) putPaddedString
@@ -76,6 +98,10 @@ putInfoChunk alignment ic = do
    where
       pps = putPossibleSection alignment
 
+-- | Get the INFO metadata from a Byte Stream.
+getInfoChunk 
+   :: Word64         -- The location, in bytes, where the INFO chunk is expected to finish
+   -> Get InfoChunk  -- The resultant infochunk wrapped in the Get Monad.
 getInfoChunk finishLocation = repeatParse infoChunkDefault finishLocation parseSection
 
 repeatParse :: a -> Word64 -> (a -> Get a) -> Get a

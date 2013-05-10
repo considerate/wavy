@@ -10,30 +10,42 @@ module Sound.Wav (
    , decodeWaveFileOrFail
 
    -- * Writing Riff Files
+   -- | You will need to write out your WAVE file data eventually and these functions will
+   -- allow you to do that.
    , encodeWaveFile
 
-   -- * Important data
+   -- * WAVE Data
+   -- | There is a nested structure all RiffFiles and these pieces of data attempt to
+   -- encapsulate that structure and make it easy for you to access the internal state of
+   -- your files.
    , RiffFile(..)
    , FormatChunk(..)
    , FactChunk(..)
    , ListChunk(..)
    , ListChunkType(..)
-   , InfoChunk(..)
    , infoChunkDefault
+   , InfoChunk(..)
    , WaveData(..)
    , Channel(..)
    , Sample(..)
 
    -- * Info Editing and Retrieval
+   -- | These functions let you get the metadata section of your WAVE files; otherwise
+   -- known as the INFO section of the RIFF file.
    , getInfoData
    , getMaybeInfoData
    , updateInfoChunk
 
    -- * Audio Formats
+   -- | You can place many different types of audio data inside an audio file, all of
+   -- which is encoded in a different way. An audio format represents a different encoding
+   -- of the audio data inside the data section of the file.
    , prettyShowAudioFormat
    , AudioFormat(..)
 
-   -- * Exported From Other Classes
+   -- * Extras
+   -- | These are the exported extras of the package that you may find useful to browse
+   -- and employ.
    , ByteOffset
 
    ) where

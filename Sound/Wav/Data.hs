@@ -6,11 +6,11 @@ import Data.Word
 
 import Sound.Wav.AudioFormats
 
-type ChunkSize = Word32
-type SampleRate = Word32
-type ByteRate = Word32
-type BlockAlignment = Word16
-type BitsPerSample = Word16
+type ChunkSize = Word32       -- ^ Size of a chunk in an AudioFile. Has a maximum bound.
+type SampleRate = Word32      -- ^ Sample Rate in an audio file.
+type ByteRate = Word32        -- ^ Byte Rate in an audio file.
+type BlockAlignment = Word16  -- ^ Represents the block alignment for the audio data.
+type BitsPerSample = Word16   -- ^ Represents how many bits are required per sample.
 
 -- | This data structure represents a whole RiffFile. You should be able to parse a WAVE
 -- file straight into this structure and then query it for future use.
@@ -39,22 +39,36 @@ data FormatChunk = FormatChunk
    }
    deriving(Show)
 
+-- | From the specifications:
+--
+-- \"The fact chunk is required if the waveform data is
+-- contained in a wavl LIST chunk and for all compressed 
+-- audio formats. The chunk is not required for PCM files 
+-- using the data chunk format.\"
+--
+-- This means that this section will become more important as this library matures and
+-- begins to support a whole range of 'AudioFormat's.
 data FactChunk = FactChunk
-   { factSampleCount :: Word32
+   { factSampleCount :: Word32 -- ^ The number of WAVE samples in this file.
    }
    deriving(Show)
 
+-- | The LIST chunk allows even more nested data to be contained inside a Riff file.
+-- Currently only a small selection of LIST chunk types are supported.
 data ListChunk = ListChunk
-   { listType :: String
-   , listChunkData :: Maybe ListChunkType
+   { listType :: String                      -- The type of chunk, this is the chunk name.
+   , listChunkData :: Maybe ListChunkType    -- The representation of this chunk.
    }
    deriving(Show)
 
+-- | The internal representation of a type of list chunk.
 data ListChunkType 
-   = InfoListChunk InfoChunk
+   = InfoListChunk InfoChunk -- ^ An INFO chunk. Currently the only type supported.
    deriving(Show)
 
--- This info chunk is defined in section 2-14 of the Spec
+-- | This datatype defines an INFO chunk and our internal representation of it. It is
+-- actually defined very clearly in section 2-14 of the Spec and we have tried to mirror
+-- that representation here.
 data InfoChunk = InfoChunk
    { archiveLocation       :: Maybe String
    , artist                :: Maybe String
@@ -86,7 +100,8 @@ data InfoChunk = InfoChunk
    }
    deriving(Show)
    
--- Creating a default infochunk with default data, there must be a better way
+-- | This is the default value that an INFO chunk can take, a chunk that contains no
+-- metadata at all.
 infoChunkDefault = InfoChunk
    Nothing
    Nothing
@@ -112,11 +127,27 @@ infoChunkDefault = InfoChunk
    Nothing
    Nothing
 
+-- | The datastructure that contains all of the wave data. It contains the data of
+-- multiple channels.
 data WaveData = WaveData [Channel]
               deriving(Show)
 
+-- | A channel is a single stream of audio samples that plays for the entire length of the
+-- audio file. For example, in a Mono audio file there is only one channel but in a stereo
+-- audio file there are two channels. 
+--
+-- There are no restrictions on how many channels your audio files may contain but each
+-- channel added adds a significant percentage of data to the audio file.
+--
+-- When channels are written out to a file the samples are interleaved by timestep and are
+-- written in order of channel number. 
 data Channel = Channel [Sample]
              deriving(Show)
+
+-- | Represents a Sample in audio data.
+--
+-- Not all samples are born equal, some samples contain more data than others and in this
+-- data structure we have a number of buckets that the audio data can fit into.
 data Sample 
    = Int8Sample Int8
    | Int16Sample Int16

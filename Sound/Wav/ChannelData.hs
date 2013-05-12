@@ -1,4 +1,8 @@
-module Sound.Wav.ChannelData where
+-- | This module allows us to deal with channel data inside of a riff file.
+module Sound.Wav.ChannelData 
+   ( getData
+   , putChannelData
+   ) where
 
 import Data.Binary.Get
 import Data.Binary.Put
@@ -10,7 +14,10 @@ import Data.Int
 import Sound.Wav.Data
 import Sound.Wav.Core
 
-getData :: FormatChunk -> Get WaveData
+-- | Get the data section of a RiffFile and convert it into wave data.
+getData 
+   :: FormatChunk    -- The format chunk to work out important things like byte alignment.
+   -> Get WaveData   -- The wave data that was in the Data chunk of the file.
 getData format = do
    dataHeader <- getIdentifier
    if dataHeader /= "data"
@@ -43,7 +50,10 @@ getChannelData format chunkSize =
             -- I do not and so I am converting it
             eightBitConversion = Int8Sample . fromIntegral . (flip (-) 128)
 
-putChannelData :: WaveData -> Put
+-- | Put the entire host of wave data back out to a byte stream.
+putChannelData 
+   :: WaveData -- ^ The wave data to be written out.
+   -> Put
 putChannelData = sequence_ . fmap putSample . concat . transpose . fmap toSamples . toChannels
    where
       toSamples :: Channel -> [Sample]

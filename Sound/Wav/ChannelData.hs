@@ -36,27 +36,28 @@ getChannelData format chunkSize =
       channels = fromIntegral $ numChannels format
       bytesPerSingleSample = (bitsPerSample format) `divRoundUp` 8
 
-      getAllSamples :: Get [Sample]
+      getAllSamples :: Get [Integer]
       getAllSamples = sequence $
          case bytesPerSingleSample of
             1 -> take (chunkSizeBy 1) . fmap (fmap eightBitConversion) $ repeat getWord8
-            2 -> take (chunkSizeBy 2) . fmap (fmap (Int16Sample . fromIntegral)) $ repeat getWord16le
-            4 -> take (chunkSizeBy 4) . fmap (fmap (Int32Sample . fromIntegral)) $ repeat getWord32le
-            8 -> take (chunkSizeBy 8) . fmap (fmap (Int64Sample . fromIntegral)) $ repeat getWord64le
+            2 -> take (chunkSizeBy 2) . fmap (fmap fromIntegral) $ repeat getWord16le
+            4 -> take (chunkSizeBy 4) . fmap (fmap fromIntegral) $ repeat getWord32le
+            8 -> take (chunkSizeBy 8) . fmap (fmap fromIntegral) $ repeat getWord64le
             _ -> fail $ "Cannot handle sample size of " ++ show bytesPerSingleSample ++ " bytes."
          where 
             chunkSizeBy x = fromIntegral $ chunkSize `div` x
             -- TODO For some reason the spec wants 8 bit to be different from the rest
             -- I do not and so I am converting it
-            eightBitConversion = Int8Sample . fromIntegral . (flip (-) 128)
+            eightBitConversion = fromIntegral . (flip (-) 128)
 
 -- | Put the entire host of wave data back out to a byte stream.
 putChannelData 
-   :: WaveData -- ^ The wave data to be written out.
+   :: FormatChunk    -- ^ The audio format that tells us how many bits to put out
+   -> WaveData       -- ^ The wave data to be written out.
    -> Put
-putChannelData = sequence_ . fmap putSample . concat . transpose . fmap toSamples . toChannels
+putChannelData format = sequence_ . fmap putSample . concat . transpose . fmap toSamples . toChannels
    where
-      toSamples :: Channel -> [Sample]
+      toSamples :: Channel -> [Integer]
       toSamples (Channel xs) = xs
 
       toChannels :: WaveData -> [Channel]
@@ -65,8 +66,9 @@ putChannelData = sequence_ . fmap putSample . concat . transpose . fmap toSample
       convertInt :: Int8 -> Word8
       convertInt x = fromIntegral $ x + 128
 
-      putSample :: Sample -> Put
-      putSample (Int8Sample x) = putWord8 . convertInt $ x
-      putSample (Int16Sample x) = putWord16le . fromIntegral $ x
-      putSample (Int32Sample x) = putWord32le . fromIntegral $ x
-      putSample (Int64Sample x) = putWord64le . fromIntegral $ x
+      putSample :: Integer -> Put
+      putSample value = case bitsPerSample format `div` 8 of
+         1 -> putWord8 . convertInt . fromIntegral $ value
+         2 -> putWord16le . fromIntegral $ value
+         3 -> putWord32le . fromIntegral $ value
+         4 -> putWord64le . fromIntegral $ value

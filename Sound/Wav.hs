@@ -27,7 +27,6 @@ module Sound.Wav (
    , InfoChunk(..)
    , WaveData(..)
    , Channel(..)
-   , Sample(..)
 
    -- * Info Editing and Retrieval
    -- | These functions let you get the metadata section of your WAVE files; otherwise
@@ -108,7 +107,7 @@ instance Binary RiffFile where
             putString "WAVE"
             putRiffSection 2 "fmt " $ putFormatChunk format
             putPossible (listChunk file) ((putRiffSection 2 "LIST") . (putListChunk 2))
-            putRiffSection alignment "data" $ putChannelData (waveData file)
+            putRiffSection alignment "data" $ putChannelData format (waveData file)
 
          format = fileFormat file
          alignment = blockAlignment format

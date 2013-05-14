@@ -141,16 +141,5 @@ data WaveData = WaveData [Channel]
 --
 -- When channels are written out to a file the samples are interleaved by timestep and are
 -- written in order of channel number. 
-data Channel = Channel [Sample]
+data Channel = Channel [Integer]
              deriving(Show)
-
--- | Represents a Sample in audio data.
---
--- Not all samples are born equal, some samples contain more data than others and in this
--- data structure we have a number of buckets that the audio data can fit into.
-data Sample 
-   = Int8Sample Int8
-   | Int16Sample Int16
-   | Int32Sample Int32
-   | Int64Sample Int64
-   deriving(Show)

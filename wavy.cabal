@@ -52,6 +52,8 @@ bug-reports:         http://bitbucket.org/robertmassaioli/wavy/issues
 library
   -- Modules exported by the library.
   exposed-modules:     Sound.Wav
+
+  -- ghc-options: -prof
   
   -- Modules included in this library but not exported.
   other-modules:       Sound.Wav.Core
@@ -71,6 +73,8 @@ library
 executable show-wav-data
    hs-source-dirs: src
    main-is: Main.hs
+
+   -- ghc-options: -prof
   
    build-depends:       base ==4.5.*
                           , split
@@ -81,5 +85,15 @@ executable wavinfo
    hs-source-dirs: src
    main-is: Info.hs
 
+   -- ghc-options: -prof
+
    build-depends:       base ==4.5.*
                         , wavy
+
+executable wavsplit
+   hs-source-dirs: src
+   main-is: Splitter.hs
+
+   build-depends:       base ==4.5.*
+                        , wavy
+                        , split

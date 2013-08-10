@@ -94,6 +94,8 @@ executable wavsplit
    hs-source-dirs: src
    main-is: Splitter.hs
 
+   ghc-options: -rtsopts
+
    build-depends:       base ==4.5.*
                         , wavy
                         , split

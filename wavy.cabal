@@ -65,10 +65,10 @@ library
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*
-                       , binary
-                       , bytestring
-                       , split
-                       , containers
+                       , binary ==0.7.*
+                       , bytestring ==0.9.*
+                       , split ==0.2.*
+                       , containers ==0.4.*
 
 executable show-wav-data
    hs-source-dirs: src

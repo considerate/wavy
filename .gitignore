@@ -1,5 +1,8 @@
 # Compiled Files
 /dist
+/show-wav-data
+/wavinfo
+/wavsplit
 
 # Cabal Dev
 /cabal-dev

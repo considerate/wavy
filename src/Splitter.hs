@@ -38,17 +38,31 @@ splitWavFile originalFile = fmap (\newData -> originalFile {waveData = newData})
 channelsInData (WaveData c) = c
 
 channelsToData :: [[Channel]] -> [WaveData]
-channelsToData = fmap WaveData . transpose
+channelsToData = fmap WaveData
 
+-- Splits one set of channels into equal channel splits
 splitChannels :: [Channel] -> [[Channel]]
-splitChannels channels = groupKeepers
+splitChannels channels = transpose groupKeepers
    where
-      retain x = expand x . valuableSections . averageChannels $ squishChannels x channels 
+      --retain :: Integral a => a => [a]
+      retain :: Integral a => a -> [Bool]
+      retain x = expand (fromIntegral x) . valuableSections . squishChannel x . absChannel $ head channels
+
       joinedElements :: [[(Bool, Integer)]]
-      joinedElements = fmap (zip (retain 100) . toSamples) channels
+      joinedElements = fmap (zip retention . toSamples) channels
+         where
+            retention = retain 100
    
+      --groupKeepers
+
       groupKeepers :: [[Channel]]
-      groupKeepers = fmap (fmap Channel . fmap (fmap snd) . filter trueIsElem . groupBy fstEqual) joinedElements
+      groupKeepers = fmap keepersToChannel joinedElements
+
+      keepersToChannel :: [(Bool, Integer)] -> [Channel]
+      keepersToChannel = fmap (Channel . fmap snd) . filter trueIsElem . groupBy fstEqual
+
+      --multiGroupKeepers :: [[Channel]]
+      --multiGroupKeepers = fmap groupKeepers joinedElements
 
       fstEqual a b = fst a == fst b
       trueIsElem a = True `elem` (fmap fst a)
@@ -63,17 +77,19 @@ expand count = go
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
 valuableSections :: Channel -> [Bool]
-valuableSections (Channel samples) = fmap (< lowerBound) absSamples
+valuableSections (Channel absSamples) = fmap (> lowerBound) absSamples
    where 
-      absSamples = fmap abs samples
       (minSample, maxSample) = fromMaybe (0,0) $ minMax absSamples
-      lowerBound = maxSample `div` 10
+      lowerBound = maxSample `div` 500
 
 minMax :: Ord a => [a] -> Maybe (a, a)
 minMax [] = Nothing
-minMax (x:xs) = Just $ (if x < min then x else min, if x > max then x else max)
+minMax (x:xs) = Just $ (min x minVal, max x maxVal)
    where
-      (min, max) = fromMaybe (x, x) $ minMax xs
+      (minVal, maxVal) = fromMaybe (x, x) $ minMax xs
+
+firstChannel :: [Channel] -> Channel
+firstChannel = head
 
 averageChannels :: [Channel] -> Channel
 averageChannels = Channel . fmap average . transpose . fmap toSamples
@@ -89,6 +105,12 @@ squishChannel factor (Channel samples) = Channel averagedSamples
    where
       averagedSamples = fmap average groupedSamples
       groupedSamples = S.chunksOf (fromIntegral factor) samples
+
+absChannels :: [Channel] -> [Channel]
+absChannels = fmap absChannel
+
+absChannel :: Channel -> Channel
+absChannel (Channel samples) = Channel $ fmap abs samples
 
 average :: Integral a => [a] -> a
 average xs = (fromIntegral $ sum xs) `div` (fromIntegral $ length xs)

@@ -40,6 +40,9 @@ channelsInData (WaveData c) = c
 channelsToData :: [[Channel]] -> [WaveData]
 channelsToData = fmap WaveData
 
+retentionWidth = 10
+lowerBoundPercent = 2500
+
 -- Splits one set of channels into equal channel splits
 splitChannels :: [Channel] -> [[Channel]]
 splitChannels channels = transpose groupKeepers
@@ -51,7 +54,7 @@ splitChannels channels = transpose groupKeepers
       joinedElements :: [[(Bool, Integer)]]
       joinedElements = fmap (zip retention . toSamples) channels
          where
-            retention = retain 100
+            retention = retain retentionWidth
    
       --groupKeepers
 
@@ -80,7 +83,7 @@ valuableSections :: Channel -> [Bool]
 valuableSections (Channel absSamples) = fmap (> lowerBound) absSamples
    where 
       (minSample, maxSample) = fromMaybe (0,0) $ minMax absSamples
-      lowerBound = maxSample `div` 500
+      lowerBound = maxSample `div` lowerBoundPercent
 
 minMax :: Ord a => [a] -> Maybe (a, a)
 minMax [] = Nothing

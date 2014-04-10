@@ -21,6 +21,7 @@ data WaveFile = WaveFile
    { waveFormat :: WaveFormat
    , waveData :: RawWaveData
    , waveFact :: Maybe WaveFact
+   , waveInfo :: Maybe WaveInfo
    }
    deriving (Show)
 
@@ -54,23 +55,10 @@ data WaveFact = WaveFact
    }
    deriving(Show)
 
--- | The LIST chunk allows even more nested data to be contained inside a Riff file.
--- Currently only a small selection of LIST chunk types are supported.
-data ListChunk = ListChunk
-   { listType :: String                      -- The type of chunk, this is the chunk name.
-   , listChunkData :: Maybe ListChunkType    -- The representation of this chunk.
-   }
-   deriving(Show)
-
--- | The internal representation of a type of list chunk.
-data ListChunkType 
-   = InfoListChunk InfoChunk -- ^ An INFO chunk. Currently the only type supported.
-   deriving(Show)
-
 -- | This datatype defines an INFO chunk and our internal representation of it. It is
 -- actually defined very clearly in section 2-14 of the Spec and we have tried to mirror
 -- that representation here.
-data InfoChunk = InfoChunk
+data WaveInfo = WaveInfo
    { archiveLocation       :: Maybe String
    , artist                :: Maybe String
    , commissionedBy        :: Maybe String
@@ -103,7 +91,7 @@ data InfoChunk = InfoChunk
    
 -- | This is the default value that an INFO chunk can take, a chunk that contains no
 -- metadata at all.
-infoChunkDefault = InfoChunk
+waveInfoDefault = WaveInfo
    Nothing
    Nothing
    Nothing

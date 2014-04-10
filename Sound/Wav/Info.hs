@@ -4,9 +4,9 @@
 -- Metadata chunk of a RIFF file. It allows you to read, write and modify that chunk of
 -- data easily.
 module Sound.Wav.Info 
-   ( getInfoChunk
-   , putInfoChunk
-   , updateInfoChunk
+   ( getWaveInfo
+   , putWaveInfo
+   , updateWaveInfo
    , getInfoData
    , getMaybeInfoData
    ) where
@@ -26,31 +26,25 @@ import Sound.Wav.Data
 -- TODO the code in this function could be greatly cleaned up via lenses
 -- | Update the INFO metadata chunk inside an existing RiffFile. This will allow you to
 -- edit the metadata inside a file.
-updateInfoChunk 
-   :: (InfoChunk -> InfoChunk)   -- ^ The conversion function from original to new metadata.
-   -> RiffFile                   -- ^ The input RiffFile that will be modified.
-   -> RiffFile                   -- ^ A new RiffFile that contains the updated INFO section.
-updateInfoChunk updater file = updatedfile $ getInfoData file
-   where
-      updatedfile infoData = 
-         file { listChunk = Just (ListChunk "INFO" (Just (InfoListChunk $ updater infoData))) }
+updateWaveInfo 
+   :: (WaveInfo -> WaveInfo)   -- ^ The conversion function from original to new metadata.
+   -> WaveFile                   -- ^ The input RiffFile that will be modified.
+   -> WaveFile                   -- ^ A new RiffFile that contains the updated INFO section.
+updateWaveInfo updater waveFile = waveFile { waveInfo = fmap updater $ waveInfo waveFile }
 
 -- | You want to be able to get the info chunk from your RiffFiles, however, if the info
 -- chunk does not exist then you will be provided with a default info chunk.
 getInfoData 
-   :: RiffFile    -- ^ The file that you wish to extract INFO metadata from.
-   -> InfoChunk   -- ^ The info metadata.
-getInfoData file = fromMaybe infoChunkDefault $ getMaybeInfoData file 
+   :: WaveFile    -- ^ The file that you wish to extract INFO metadata from.
+   -> WaveInfo   -- ^ The info metadata.
+getInfoData = maybe waveInfoDefault id . waveInfo
 
 -- | Attempts to get the info chunk out of your RiffFile but if it does not exist then it
 -- returns Nothing. This way you know if you actually have anything that you can use.
 getMaybeInfoData 
-   :: RiffFile          -- ^ The file that you wish to extract INFO metadata from.
-   -> Maybe InfoChunk   -- ^ A potential info chunk if it exists.
-getMaybeInfoData file = 
-   case listChunk file of
-      Just (ListChunk "INFO" (Just (InfoListChunk infoData))) -> Just infoData
-      _ -> Nothing
+   :: WaveFile          -- ^ The file that you wish to extract INFO metadata from.
+   -> Maybe WaveInfo   -- ^ A potential info chunk if it exists.
+getMaybeInfoData = waveInfo
 
 -- Put Possible Section (pps)
 putPossibleSection :: BlockAlignment -> String -> Maybe a -> (a -> Put) -> Put
@@ -65,11 +59,11 @@ putStrings xs = (sequence_ . intersperse (putString "; ") . fmap putString $ xs)
 -- TODO work out what the correct output format for the integers is
 -- | This allows you to write an infoChunk out in the format that it should appear in a
 -- file. 
-putInfoChunk 
+putWaveInfo 
    :: BlockAlignment    -- The INFO chunk must be aligned and this says how many bytes it should be aligned to
-   -> InfoChunk         -- ^ The info chunk that you wish to write out.
+   -> WaveInfo         -- ^ The info chunk that you wish to write out.
    -> Put
-putInfoChunk alignment ic = do
+putWaveInfo alignment ic = do
    putString "INFO"
    pps "IARL" (archiveLocation ic) putPaddedString
    pps "IART" (artist ic) putPaddedString
@@ -99,10 +93,10 @@ putInfoChunk alignment ic = do
       pps = putPossibleSection alignment
 
 -- | Get the INFO metadata from a Byte Stream.
-getInfoChunk 
+getWaveInfo 
    :: Word64         -- The location, in bytes, where the INFO chunk is expected to finish
-   -> Get InfoChunk  -- The resultant infochunk wrapped in the Get Monad.
-getInfoChunk finishLocation = repeatParse infoChunkDefault finishLocation parseSection
+   -> Get WaveInfo  -- The resultant infochunk wrapped in the Get Monad.
+getWaveInfo finishLocation = repeatParse waveInfoDefault finishLocation parseSection
 
 repeatParse :: a -> Word64 -> (a -> Get a) -> Get a
 repeatParse initial stopLength step = go initial
@@ -114,7 +108,7 @@ repeatParse initial stopLength step = go initial
             then return next
             else go next
 
-parseSection :: InfoChunk -> Get InfoChunk
+parseSection :: WaveInfo -> Get WaveInfo
 parseSection initial = do 
    ident <- getIdentifier
    case ident of

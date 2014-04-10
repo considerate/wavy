@@ -59,7 +59,6 @@ library
   other-modules:       Sound.Wav.Core
                        , Sound.Wav.ChannelData
                        , Sound.Wav.Parse
-                       , Sound.Wav.List
                        , Sound.Wav.Info
                        , Sound.Wav.Data
                        , Sound.Wav.AudioFormats

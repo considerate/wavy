@@ -26,7 +26,9 @@ fromRiffChunks :: [R.RiffChunk] -> Either WaveParseError WaveFile
 fromRiffChunks chunks = do
    format <- runGetWaveFormat =<< formatChunk
    rawData <- dataChunk
-   return $ WaveFile format (R.riffData rawData) Nothing
+   -- TODO potentially get the other chunks that we know about
+   -- TODO Store the remaining chunks in an overflow of the riff chunks
+   return $ WaveFile format (R.riffData rawData) Nothing Nothing
    where
       formatChunk = onlyOneChunk waveFormatHeader $ filter (riffIdIs waveFormatHeader) chunks
       dataChunk = onlyOneChunk waveDataHeader $ filter (riffIdIs waveDataHeader) chunks
@@ -57,6 +59,10 @@ getWaveFormat = do
       , waveBlockAlignment = blockAlignment
       , waveBitsPerSample = bitsPerSample
       }
+
+
+getFactChunkHelper :: Get WaveFact
+getFactChunkHelper = fmap WaveFact getWord32le
 
 onlyOneChunk :: String -> [R.RiffChunk] -> Either WaveParseError R.RiffChunk
 onlyOneChunk chunkType []  = Left $ "There were no chunks of type: " ++ chunkType 

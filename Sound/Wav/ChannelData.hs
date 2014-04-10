@@ -16,7 +16,7 @@ import Sound.Wav.Core
 
 -- | Get the data section of a RiffFile and convert it into wave data.
 getData 
-   :: FormatChunk    -- The format chunk to work out important things like byte alignment.
+   :: WaveFormat    -- The format chunk to work out important things like byte alignment.
    -> Get WaveData   -- The wave data that was in the Data chunk of the file.
 getData format = do
    dataHeader <- getIdentifier
@@ -29,12 +29,12 @@ divRoundUp a b = res + if rem > 0 then 1 else 0
    where
       (res, rem) = a `divMod` b
 
-getChannelData :: FormatChunk -> ChunkSize -> Get [Channel]
+getChannelData :: WaveFormat -> ChunkSize -> Get [Channel]
 getChannelData format chunkSize =
    fmap (map Channel . transpose . chunksOf channels) getAllSamples
    where
-      channels = fromIntegral $ numChannels format
-      bytesPerSingleSample = (bitsPerSample format) `divRoundUp` 8
+      channels = fromIntegral $ waveNumChannels format
+      bytesPerSingleSample = (waveBitsPerSample format) `divRoundUp` 8
 
       getAllSamples :: Get [Integer]
       getAllSamples = sequence $
@@ -52,7 +52,7 @@ getChannelData format chunkSize =
 
 -- | Put the entire host of wave data back out to a byte stream.
 putChannelData 
-   :: FormatChunk    -- ^ The audio format that tells us how many bits to put out
+   :: WaveFormat    -- ^ The audio format that tells us how many bits to put out
    -> WaveData       -- ^ The wave data to be written out.
    -> Put
 putChannelData format = sequence_ . fmap putSample . concat . transpose . fmap toSamples . toChannels
@@ -67,7 +67,7 @@ putChannelData format = sequence_ . fmap putSample . concat . transpose . fmap t
       convertInt x = fromIntegral $ x + 128
 
       putSample :: Integer -> Put
-      putSample value = case bitsPerSample format `div` 8 of
+      putSample value = case waveBitsPerSample format `div` 8 of
          1 -> putWord8 . convertInt . fromIntegral $ value
          2 -> putWord16le . fromIntegral $ value
          3 -> putWord32le . fromIntegral $ value

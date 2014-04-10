@@ -4,6 +4,7 @@ module Sound.Wav.Parse
 
 import qualified Data.Riff as R
 import Sound.Wav.Data
+import Sound.Wav.AudioFormats (getAudioFormat)
 
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
@@ -23,17 +24,39 @@ fromRiffFile (R.RiffFile _ formatType chunks) =
 
 fromRiffChunks :: [R.RiffChunk] -> Either WaveParseError WaveFile
 fromRiffChunks chunks = do
-   format <- formatChunk
-
+   format <- runGetWaveFormat =<< formatChunk
    rawData <- dataChunk
-   return $ WaveFile (error "blah") (R.riffData rawData) Nothing
+   return $ WaveFile format (R.riffData rawData) Nothing
    where
       formatChunk = onlyOneChunk waveFormatHeader $ filter (riffIdIs waveFormatHeader) chunks
       dataChunk = onlyOneChunk waveDataHeader $ filter (riffIdIs waveDataHeader) chunks
+
+runGetWaveFormat :: R.RiffChunk -> Either WaveParseError WaveFormat
+runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) = 
+   case runGetOrFail getWaveFormat (R.riffData riffChunk) of
+      Left (_, offset, error) -> Left $ "Error in format chunk: " ++ error ++ postfix offset
+      Right (_, _, waveFormat) -> Right waveFormat
+   where 
+      postfix offset = " (" ++ show offset ++ ")"
+runGetWaveFormat _ = Left $ "Format chunk is not allowed to be a nested chunk!"
       
 getWaveFormat :: Get WaveFormat
-getWaveFormat = error "NIY"
-   
+getWaveFormat = do
+   -- TODO use the correct endian based on the correct parsing context
+   audioFormat <- fmap getAudioFormat getWord16le
+   numChannels <- getWord16le
+   sampleRate <- getWord32le
+   byteRate <- getWord32le
+   blockAlignment <- getWord16le
+   bitsPerSample <- getWord16le
+   return WaveFormat
+      { waveAudioFormat = audioFormat
+      , waveNumChannels = numChannels
+      , waveSampleRate = sampleRate
+      , waveByteRate = byteRate
+      , waveBlockAlignment = blockAlignment
+      , waveBitsPerSample = bitsPerSample
+      }
 
 onlyOneChunk :: String -> [R.RiffChunk] -> Either WaveParseError R.RiffChunk
 onlyOneChunk chunkType []  = Left $ "There were no chunks of type: " ++ chunkType 

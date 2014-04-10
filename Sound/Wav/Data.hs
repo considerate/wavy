@@ -4,6 +4,8 @@ module Sound.Wav.Data where
 import Data.Int
 import Data.Word
 
+import qualified Data.ByteString.Lazy as BL
+
 import Sound.Wav.AudioFormats
 
 type ChunkSize = Word32       -- ^ Size of a chunk in an AudioFile. Has a maximum bound.
@@ -12,28 +14,27 @@ type ByteRate = Word32        -- ^ Byte Rate in an audio file.
 type BlockAlignment = Word16  -- ^ Represents the block alignment for the audio data.
 type BitsPerSample = Word16   -- ^ Represents how many bits are required per sample.
 
--- | This data structure represents a whole RiffFile. You should be able to parse a WAVE
--- file straight into this structure and then query it for future use.
-data RiffFile = RiffFile
-   { rootChunkSize :: ChunkSize -- ^ This is the chunk size of the root element in the Riff file.
-   , fileFormat :: FormatChunk      -- ^ This contains the format data for the Riff file.
-   , factChunk :: Maybe FactChunk   -- ^ This contains a possible fact chunk in the Riff file.
-   , listChunk  :: Maybe ListChunk  -- ^ A potential LIST chunk may be contained here.
-   , waveData   :: WaveData         -- ^ The actual raw WAVE data is contained here.
+type WaveParseError = String
+type RawWaveData = BL.ByteString
+
+data WaveFile = WaveFile
+   { waveFormat :: WaveFormat
+   , waveData :: RawWaveData
+   , waveFact :: Maybe WaveFact
    }
-   deriving(Show)
+   deriving (Show)
 
 -- | Each Riff file has a Format chunk and this data structure encapsulates the data that
 -- is usually contained within. The format chunk gives you useful information: such as
 -- what encoding was run over the data in the file and how many bits were used per sample.
-data FormatChunk = FormatChunk
-   { audioFormat :: AudioFormat        -- ^ The audio format that this file was encoded with.
-   , numChannels :: Word16             -- ^ The number of channels in this recorded data. 
+data WaveFormat = WaveFormat
+   { waveAudioFormat :: AudioFormat        -- ^ The audio format that this file was encoded with.
+   , waveNumChannels :: Word16             -- ^ The number of channels in this recorded data. 
                                        -- This is the difference between Mono, Stereo and more.
-   , sampleRate :: SampleRate          -- ^ The rate at which samples were taken. Measured in Hz.
-   , byteRate :: ByteRate              -- ^ The rate at which bytes should be consumed in Hz.
-   , blockAlignment :: BlockAlignment  -- ^ The number of bytes per block in this file.
-   , bitsPerSample :: BitsPerSample    -- ^ The number of bits of data in every sample. This is 
+   , waveSampleRate :: SampleRate          -- ^ The rate at which samples were taken. Measured in Hz.
+   , waveByteRate :: ByteRate              -- ^ The rate at which bytes should be consumed in Hz.
+   , waveBlockAlignment :: BlockAlignment  -- ^ The number of bytes per block in this file.
+   , waveBitsPerSample :: BitsPerSample    -- ^ The number of bits of data in every sample. This is 
                                        -- important as it gives you an upper and lower bound 
                                        -- on the values present in the data.
    }
@@ -48,8 +49,8 @@ data FormatChunk = FormatChunk
 --
 -- This means that this section will become more important as this library matures and
 -- begins to support a whole range of 'AudioFormat's.
-data FactChunk = FactChunk
-   { factSampleCount :: Word32 -- ^ The number of WAVE samples in this file.
+data WaveFact = WaveFact
+   { waveFactSampleCount :: Word32 -- ^ The number of WAVE samples in this file.
    }
    deriving(Show)
 

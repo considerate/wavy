@@ -18,10 +18,11 @@ module Sound.Wav (
    -- | There is a nested structure all WaveFiles and these pieces of data attempt to
    -- encapsulate that structure and make it easy for you to access the internal state of
    -- your files.
+   , WaveFile(..)
    , WaveFormat(..)
    , WaveFact(..)
    , WaveInfo(..)
-   , infoChunkDefault
+   , waveInfoDefault
    , WaveData(..)
    , Channel(..)
 
@@ -30,7 +31,7 @@ module Sound.Wav (
    -- known as the INFO section of the RIFF file.
    , getInfoData
    , getMaybeInfoData
-   , updateInfoChunk
+   , updateWaveInfo
 
    -- * Audio Formats
    -- | You can place many different types of audio data inside an audio file, all of
@@ -57,6 +58,9 @@ import Sound.Wav.Data
 import Sound.Wav.Info
 import Sound.Wav.ChannelData
 import Sound.Wav.AudioFormats
+
+import Sound.Wav.Parse
+import Sound.Wav.Assemble 
 
 import qualified Data.ByteString.Lazy as L
 
@@ -93,3 +97,7 @@ encodeWaveFile
    -> WaveFile -- ^ The internal representation of a WAVE file.
    -> IO ()    -- ^ This is performed inside an IO action.
 encodeWaveFile = encodeFile
+
+instance Binary WaveFile where
+   put = assembleWaveFile
+   get = getWaveFile

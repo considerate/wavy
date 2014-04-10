@@ -19,6 +19,8 @@ import Data.Either (partitionEithers)
 import Data.List (intersperse)
 import Control.Monad (when)
 
+import qualified Data.ByteString.Lazy as BL
+
 import Sound.Wav
 
 main = do 
@@ -27,10 +29,10 @@ main = do
       then putStrLn "No files were given, nothing was parsed."
       else mapM decodeWaveFileOrFail files >>= handleData files
 
-handleData :: [FilePath] -> [Either (ByteOffset, String) RiffFile] -> IO ()
+handleData :: [FilePath] -> [Either (ByteOffset, String) WaveFile] -> IO ()
 handleData files parseData = do
    mapM_ handleError $ zip files errors
-   sequence_ . spreadNewlines . fmap displayRiffFile $ zip files results
+   sequence_ . spreadNewlines . fmap displayWaveFile $ zip files results
    where
       (errors, results) = partitionEithers parseData
       spreadNewlines :: [IO ()] -> [IO ()]
@@ -41,17 +43,17 @@ handleError (filename, (offset, errorMessage)) = do
    putStrLn $ "Error parsing: " ++ filename
    putStrLn $ "  " ++ errorMessage
 
-displayRiffFile :: (FilePath, RiffFile) -> IO ()
-displayRiffFile (filename, file) = do
+displayWaveFile :: (FilePath, WaveFile) -> IO ()
+displayWaveFile (filename, file) = do
    displayName filename file
    putStr " - "
    displayTime . audioTime $ file
    putStrLn ""
-   displayFormatSection . fileFormat $ file
+   displayFormatSection . waveFormat $ file
    putStrLn ""
    displayInfoSection . getMaybeInfoData $ file
 
-displayName :: String -> RiffFile -> IO ()
+displayName :: String -> WaveFile -> IO ()
 displayName filename file =
    case name $ getInfoData file of
       Nothing -> putStr $ "File: " ++ filename
@@ -65,39 +67,55 @@ divRoundUp a b = res + if rem > 0 then 1 else 0
 
 displayTime :: (Integer, Integer, Integer) -> IO ()
 displayTime (hours, minutes, seconds) = do
-   when (hours /= 0) $ putStr (show hours ++ "h")
-   when (minutes /= 0) $ putStr (show minutes ++ "m")
-   when (seconds /= 0) $ putStr (show seconds ++ "s")
+   when isHours $ putStr (show hours ++ "h")
+   when isMinutes $ putStr (show minutes ++ "m")
+   when (isSeconds || not (isHours && isMinutes)) $ putStr (show seconds ++ "s")
+   where
+      isHours = hours /= 0
+      isMinutes = minutes /= 0
+      isSeconds = seconds /= 0
 
-audioTime :: RiffFile -> (Integer, Integer, Integer)
+audioTime :: WaveFile -> (Integer, Integer, Integer)
 audioTime file = (hours, minutes, seconds)
    where 
-      totalSeconds = (countSamples file) `divRoundUp` (fromIntegral $ sampleRate format)
+      totalSeconds = (countSamples file) `divRoundUp` (fromIntegral $ waveSampleRate format)
       (totalMinutes, seconds) = totalSeconds `divMod` 60
       (hours, minutes) = totalMinutes `divMod` 60 
 
-      format = fileFormat file 
-      countSamples :: RiffFile -> Integer
-      countSamples = fromIntegral . length . extractSamples . head . extractChannels . waveData
+      format = waveFormat file 
+      countSamples :: WaveFile -> Integer
+      countSamples waveFile = 
+         (fromIntegral . BL.length . waveData $ waveFile) `div` factor
+         where
+            format = waveFormat waveFile
+
+            numChannels :: Integer
+            numChannels = fromIntegral . waveNumChannels $ format
+
+            bytesPerSample :: Integer
+            bytesPerSample = flip div 8 . fromIntegral . waveBitsPerSample $ format
+
+            factor = numChannels * bytesPerSample
+
       extractChannels (WaveData channels) = channels
       extractSamples (Channel samples) = samples
 
 prefix = ("     " ++)
 
-displayFormatSection :: FormatChunk -> IO ()
+displayFormatSection :: WaveFormat -> IO ()
 displayFormatSection format = do
    putStrLn "   Format"
-   putStrLn $ prefix "Audio Format: \t" ++ (prettyShowAudioFormat . audioFormat $ format)
-   putStrLn $ prefix "Channels: \t\t" ++ (show . numChannels $ format)
-   putStrLn $ prefix "Sample Rate: \t" ++ (show . sampleRate $ format)
-   putStrLn $ prefix "Bits Per Sample: \t" ++ (show . bitsPerSample $ format)
-   putStrLn $ prefix "Byte Rate: \t" ++ (show . byteRate $ format)
-   putStrLn $ prefix "Block Alignment: \t" ++ (show . blockAlignment $ format)
+   putStrLn $ prefix "Audio Format: \t" ++ (prettyShowAudioFormat . waveAudioFormat $ format)
+   putStrLn $ prefix "Channels: \t\t" ++ (show . waveNumChannels $ format)
+   putStrLn $ prefix "Sample Rate: \t" ++ (show . waveSampleRate $ format)
+   putStrLn $ prefix "Bits Per Sample: \t" ++ (show . waveBitsPerSample $ format)
+   putStrLn $ prefix "Byte Rate: \t" ++ (show . waveByteRate $ format)
+   putStrLn $ prefix "Block Alignment: \t" ++ (show . waveBlockAlignment $ format)
 
 
 infoHeader = "   INFO Metadata"
 
-displayInfoSection :: Maybe InfoChunk -> IO ()
+displayInfoSection :: Maybe WaveInfo -> IO ()
 displayInfoSection Nothing = putStrLn $ infoHeader ++ " (None Present in File)"
 displayInfoSection (Just infoData) = do
    putStrLn infoHeader
@@ -128,21 +146,21 @@ displayInfoSection (Just infoData) = do
       ppList = prettyShowListInfo infoData
       ppShow = prettyShowConvert infoData
 
-prettyShowConvert :: (Show a) => InfoChunk -> (InfoChunk -> Maybe a) -> String -> IO ()
+prettyShowConvert :: (Show a) => WaveInfo -> (WaveInfo -> Maybe a) -> String -> IO ()
 prettyShowConvert chunk convert prefixWords =
    displayIfPresent (convert chunk) $ \showData -> do
       putStr $ prefix prefixWords
       putStr ": "
       putStrLn . show $ showData
 
-prettyShowInfo :: InfoChunk -> (InfoChunk -> Maybe String) -> String -> IO ()
+prettyShowInfo :: WaveInfo -> (WaveInfo -> Maybe String) -> String -> IO ()
 prettyShowInfo chunk convert prefixWords =
    displayIfPresent (convert chunk) $ \showData -> do
       putStr $ prefix prefixWords
       putStr ": "
       putStrLn showData
 
-prettyShowListInfo :: InfoChunk -> (InfoChunk -> Maybe [String]) -> String -> IO ()
+prettyShowListInfo :: WaveInfo -> (WaveInfo -> Maybe [String]) -> String -> IO ()
 prettyShowListInfo chunk convert prefixWords = 
    displayIfPresent (convert chunk) $ \showData -> do
       putStr $ prefix prefixWords

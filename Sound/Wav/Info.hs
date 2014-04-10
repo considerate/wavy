@@ -24,22 +24,22 @@ import Sound.Wav.Core
 import Sound.Wav.Data
 
 -- TODO the code in this function could be greatly cleaned up via lenses
--- | Update the INFO metadata chunk inside an existing RiffFile. This will allow you to
+-- | Update the INFO metadata chunk inside an existing WaveFile. This will allow you to
 -- edit the metadata inside a file.
 updateWaveInfo 
    :: (WaveInfo -> WaveInfo)   -- ^ The conversion function from original to new metadata.
-   -> WaveFile                   -- ^ The input RiffFile that will be modified.
-   -> WaveFile                   -- ^ A new RiffFile that contains the updated INFO section.
+   -> WaveFile                   -- ^ The input WaveFile that will be modified.
+   -> WaveFile                   -- ^ A new WaveFile that contains the updated INFO section.
 updateWaveInfo updater waveFile = waveFile { waveInfo = fmap updater $ waveInfo waveFile }
 
--- | You want to be able to get the info chunk from your RiffFiles, however, if the info
+-- | You want to be able to get the info chunk from your WaveFiles, however, if the info
 -- chunk does not exist then you will be provided with a default info chunk.
 getInfoData 
    :: WaveFile    -- ^ The file that you wish to extract INFO metadata from.
    -> WaveInfo   -- ^ The info metadata.
 getInfoData = maybe waveInfoDefault id . waveInfo
 
--- | Attempts to get the info chunk out of your RiffFile but if it does not exist then it
+-- | Attempts to get the info chunk out of your WaveFile but if it does not exist then it
 -- returns Nothing. This way you know if you actually have anything that you can use.
 getMaybeInfoData 
    :: WaveFile          -- ^ The file that you wish to extract INFO metadata from.

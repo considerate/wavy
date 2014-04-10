@@ -4,16 +4,12 @@ import Sound.Wav
 
 import System.Environment
 
-main = fmap head getArgs 
-       >>= decodeWaveFileOrFail
-       >>= writeRiffFile
+main = do
+   args <- getArgs
+   case args of
+      [] -> putStrLn "You need to provide a file for this to work."
+      (x:_) -> decodeWaveFileOrFail x >>= writeWaveFile
 
-writeRiffFile :: Either a RiffFile -> IO ()
-writeRiffFile (Left _) = print "Could not even parse the file let alone output it."
-writeRiffFile (Right file) = encodeWaveFile "output.wav" file
-
-{-
-main = getArgs 
-       >>= mapM (\x -> (decodeFileOrFail x) :: IO (Either (ByteOffset, String) RiffFile)) 
-       >>= print
--}
+writeWaveFile :: Either a WaveFile -> IO ()
+writeWaveFile (Left _) = print "Could not even parse the file let alone output it."
+writeWaveFile (Right file) = encodeWaveFile "output.wav" file

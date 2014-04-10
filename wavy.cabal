@@ -58,6 +58,7 @@ library
   -- Modules included in this library but not exported.
   other-modules:       Sound.Wav.Core
                        , Sound.Wav.ChannelData
+                       , Sound.Wav.Assemble
                        , Sound.Wav.Parse
                        , Sound.Wav.Info
                        , Sound.Wav.Data
@@ -65,9 +66,9 @@ library
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*
-                       , riff >=0.2 && <0.3
+                       , riff >=0.3 && <0.4
                        , binary ==0.7.*
-                       , bytestring ==0.9.*
+                       , bytestring >=0.9 && <1.0
                        , split ==0.2.*
                        , containers ==0.4.*
 
@@ -88,8 +89,9 @@ executable wavinfo
 
    -- ghc-options: -prof
 
-   build-depends:       base ==4.5.*
-                        , wavy
+   build-depends:      base ==4.5.*
+                       , bytestring >=0.9 && <1.0
+                       , wavy
 
 executable wavsplit
    hs-source-dirs: src

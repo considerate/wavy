@@ -29,7 +29,7 @@ splitFile filePath = do
       filenames = fmap (\n -> show n ++ ".wav") [1..]
       writeFile (path, riffFile) = encodeWaveFile path riffFile
 
-splitWavFile :: RiffFile -> [RiffFile]
+splitWavFile :: WaveFile -> [WaveFile]
 splitWavFile originalFile = fmap (\newData -> originalFile {waveData = newData}) convertedData
    where
       soundData = waveData originalFile

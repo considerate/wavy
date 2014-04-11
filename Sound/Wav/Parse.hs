@@ -6,6 +6,8 @@ module Sound.Wav.Parse
 import qualified Data.Riff as R
 import Sound.Wav.Data
 import Sound.Wav.AudioFormats (getAudioFormat)
+import Sound.Wav.WaveFormat
+import Sound.Wav.Info (parseWaveInfo)
 
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
@@ -30,10 +32,24 @@ fromRiffChunks chunks = do
    rawData <- dataChunk
    -- TODO potentially get the other chunks that we know about
    -- TODO Store the remaining chunks in an overflow of the riff chunks
-   return $ WaveFile format (R.riffData rawData) Nothing Nothing
+   return $ WaveFile 
+      { waveFormat = format 
+      , waveData = R.riffData rawData
+      , waveFact = Nothing 
+      , waveInfo = infoChunk
+      }
    where
       formatChunk = onlyOneChunk waveFormatHeader $ filter (riffIdIs waveFormatHeader) chunks
       dataChunk = onlyOneChunk waveDataHeader $ filter (riffIdIs waveDataHeader) chunks
+      -- TODO what if there is more than one INFO chunk? is that allowed? How would we
+      -- merge it anyway?
+      infoChunk = case filter (riffListIdIs waveInfoListType) chunks of
+         [] -> Nothing
+         ((R.RiffChunkParent _ children) : _) -> Just . parseWaveInfo $ children
+         _ -> Nothing
+
+runGetWaveInfo :: R.RiffChunk -> Get WaveInfo
+runGetWaveInfo (R.RiffChunkParent _ children) = undefined
 
 runGetWaveFormat :: R.RiffChunk -> Get WaveFormat
 runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) = 
@@ -43,24 +59,6 @@ runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) =
    where 
       postfix offset = " (" ++ show offset ++ ")"
 runGetWaveFormat _ = fail $ "Format chunk is not allowed to be a nested chunk!"
-
-getWaveFormat :: Get WaveFormat
-getWaveFormat = do
-   -- TODO use the correct endian based on the correct parsing context
-   audioFormat <- fmap getAudioFormat getWord16le
-   numChannels <- getWord16le
-   sampleRate <- getWord32le
-   byteRate <- getWord32le
-   blockAlignment <- getWord16le
-   bitsPerSample <- getWord16le
-   return WaveFormat
-      { waveAudioFormat = audioFormat
-      , waveNumChannels = numChannels
-      , waveSampleRate = sampleRate
-      , waveByteRate = byteRate
-      , waveBlockAlignment = blockAlignment
-      , waveBitsPerSample = bitsPerSample
-      }
 
 
 getFactChunkHelper :: Get WaveFact
@@ -78,6 +76,11 @@ riffIdIs :: String -> R.RiffChunk -> Bool
 riffIdIs comp riffChunk@(R.RiffChunkChild _ _) = comp == R.riffChunkId riffChunk
 riffIdIs _    _ = False
 
+riffListIdIs :: String -> R.RiffChunk -> Bool
+riffListIdIs comp (R.RiffChunkParent formatType _) = comp == formatType
+riffListIdIs _    _ = False
+
 waveHeader = "WAVE"
 waveFormatHeader = "fmt "
 waveDataHeader = "data"
+waveInfoListType = "INFO"

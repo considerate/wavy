@@ -67,7 +67,7 @@ data WaveInfo = WaveInfo
    , creationDate          :: Maybe String
    , croppedDetails        :: Maybe String
    , originalDimensions    :: Maybe String
-   , dotsPerInch           :: Maybe Integer
+   , dotsPerInch           :: Maybe String
    , engineers             :: Maybe [String]
    , genre                 :: Maybe String
    , keywords              :: Maybe [String]
@@ -75,7 +75,7 @@ data WaveInfo = WaveInfo
    , lightness             :: Maybe String 
    , originalMedium        :: Maybe String 
    , name                  :: Maybe String
-   , coloursInPalette      :: Maybe Integer
+   , coloursInPalette      :: Maybe String
    , originalProduct       :: Maybe String
    , subject               :: Maybe String
    -- TODO make sure we output our name

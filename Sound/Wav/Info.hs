@@ -4,7 +4,7 @@
 -- Metadata chunk of a RIFF file. It allows you to read, write and modify that chunk of
 -- data easily.
 module Sound.Wav.Info 
-   ( getWaveInfo
+   ( parseWaveInfo
    , putWaveInfo
    , updateWaveInfo
    , getInfoData
@@ -16,6 +16,10 @@ import Data.Binary.Get
 import Data.Binary.Put
 import Data.List (intersperse)
 import Data.List.Split (splitOn)
+
+import qualified Data.Riff as R
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy.Char8 as BLC
 
 import Data.Maybe (fromMaybe)
 import Data.Word
@@ -73,14 +77,14 @@ putWaveInfo alignment ic = do
    pps "ICRD" (creationDate ic) putPaddedString
    pps "ICRP" (croppedDetails ic) putPaddedString
    pps "IDIM" (originalDimensions ic) putPaddedString
-   pps "IDPI" (dotsPerInch ic) (putWord32le . fromIntegral)
+   pps "IDPI" (dotsPerInch ic) putPaddedString
    pps "IENG" (engineers ic) putStrings
    pps "IGNR" (genre ic) putPaddedString
    pps "IKEY" (keywords ic) putStrings
    pps "ILGT" (lightness ic) putPaddedString
    pps "IMED" (originalMedium ic) putPaddedString
    pps "INAM" (name ic) putPaddedString
-   pps "IPLT" (coloursInPalette ic) (putWord32le . fromIntegral)
+   pps "IPLT" (coloursInPalette ic) putPaddedString
    pps "IPRD" (originalProduct ic) putPaddedString
    pps "ISBJ" (subject ic) putPaddedString
    -- TODO put our own name in here, then make it optional
@@ -93,65 +97,57 @@ putWaveInfo alignment ic = do
       pps = putPossibleSection alignment
 
 -- | Get the INFO metadata from a Byte Stream.
-getWaveInfo 
-   :: Word64         -- The location, in bytes, where the INFO chunk is expected to finish
-   -> Get WaveInfo  -- The resultant infochunk wrapped in the Get Monad.
-getWaveInfo finishLocation = repeatParse waveInfoDefault finishLocation parseSection
+parseWaveInfo :: [R.RiffChunk] -> WaveInfo
+parseWaveInfo = foldr appendWaveInfo waveInfoDefault 
 
-repeatParse :: a -> Word64 -> (a -> Get a) -> Get a
-repeatParse initial stopLength step = go initial
-   where 
-      go prev = do
-         next <- step prev
-         readAmount <- bytesRead
-         if (fromIntegral readAmount :: Word64) >= stopLength
-            then return next
-            else go next
-
-parseSection :: WaveInfo -> Get WaveInfo
-parseSection initial = do 
-   ident <- getIdentifier
-   case ident of
-      "IARL" -> (\x -> return $ initial { archiveLocation = Just x})   =<< parseInfoString
-      "IART" -> (\x -> return $ initial { artist = Just x})            =<< parseInfoString
-      "ICMS" -> (\x -> return $ initial { commissionedBy = Just x})    =<< parseInfoString
-      "ICMT" -> (\x -> return $ initial { comments = Just x})          =<< parseInfoString
-      "ICOP" -> (\x -> return $ initial { copyrights = Just x})        =<< parseInfoStrings
-      "ICRD" -> (\x -> return $ initial { creationDate = Just x})      =<< parseInfoString
-      "ICRP" -> (\x -> return $ initial { croppedDetails = Just x})    =<< parseInfoString
-      "IDIM" -> (\x -> return $ initial { originalDimensions = Just x}) =<< parseInfoString
-      "IDPI" -> (\x -> return $ initial { dotsPerInch = x})                =<< parseInteger
-      "IENG" -> (\x -> return $ initial { engineers = Just x})         =<< parseInfoStrings
-      "IGNR" -> (\x -> return $ initial { genre = Just x})             =<< parseInfoString
-      "IKEY" -> (\x -> return $ initial { keywords = Just x})          =<< parseInfoStrings
-      "ILGT" -> (\x -> return $ initial { lightness = Just x})         =<< parseInfoString
-      "IMED" -> (\x -> return $ initial { originalMedium = Just x})    =<< parseInfoString
-      "INAM" -> (\x -> return $ initial { name = Just x})              =<< parseInfoString
-      "IPLT" -> (\x -> return $ initial { coloursInPalette = x})           =<< parseInteger
-      "IPRD" -> (\x -> return $ initial { originalProduct = Just x})   =<< parseInfoString
-      "ISBJ" -> (\x -> return $ initial { subject = Just x})           =<< parseInfoString
-      "ISFT" -> (\x -> return $ initial { creationSoftware = Just x})  =<< parseInfoString
-      "ISHP" -> (\x -> return $ initial { sharpness = Just x})         =<< parseInfoString
-      "ISCR" -> (\x -> return $ initial { contentSource = Just x})     =<< parseInfoString
-      "ISRF" -> (\x -> return $ initial { originalForm = Just x})      =<< parseInfoString
-      "ITCH" -> (\x -> return $ initial { technician = Just x})        =<< parseInfoString
+appendWaveInfo :: R.RiffChunk -> WaveInfo -> WaveInfo
+appendWaveInfo (R.RiffChunkChild riffId rawData) initial = do
+   case riffId of
+      "IARL" -> initial { archiveLocation = Just asString}
+      "IART" -> initial { artist = Just asString}
+      "ICMS" -> initial { commissionedBy = Just asString}
+      "ICMT" -> initial { comments = Just asString}
+      "ICOP" -> initial { copyrights = Just asStringList}
+      "ICRD" -> initial { creationDate = Just asString}
+      "ICRP" -> initial { croppedDetails = Just asString}
+      "IDIM" -> initial { originalDimensions = Just asString}
+      "IDPI" -> initial { dotsPerInch = Just asString}
+      "IENG" -> initial { engineers = Just asStringList}
+      "IGNR" -> initial { genre = Just asString}
+      "IKEY" -> initial { keywords = Just asStringList}
+      "ILGT" -> initial { lightness = Just asString}
+      "IMED" -> initial { originalMedium = Just asString}
+      "INAM" -> initial { name = Just asString}
+      "IPLT" -> initial { coloursInPalette = Just asString}
+      "IPRD" -> initial { originalProduct = Just asString}
+      "ISBJ" -> initial { subject = Just asString}
+      "ISFT" -> initial { creationSoftware = Just asString}
+      "ISHP" -> initial { sharpness = Just asString}
+      "ISCR" -> initial { contentSource = Just asString}
+      "ISRF" -> initial { originalForm = Just asString}
+      "ITCH" -> initial { technician = Just asString}
       -- Skipping and ignoring them kinda sucks, in the future make it so 
       -- that you put them in a buffer somewhere
-      _ -> getWord32le >>= skip . makeEven . fromIntegral >> return initial
+      _ -> initial
+   where
+      asString = parseInfoString rawData
+      asStringList = parseInfoStrings rawData
+appendWaveInfo _ initial = initial
 
-parseInfoString :: Get String
-parseInfoString = wrapRiffSection $ \chunkSize -> do
-   infoString <- getNChars (fromIntegral . makeEven $ chunkSize)
-   return $ dropTrailingNull infoString
+parseInfoString :: BL.ByteString -> String
+parseInfoString = dropTrailingNull . BLC.unpack
 
-parseInfoStrings :: Get [String]
-parseInfoStrings = fmap (splitOn "; ") parseInfoString
+parseInfoStrings :: BL.ByteString -> [String]
+parseInfoStrings = splitOn "; " . parseInfoString
 
-parseInteger :: Get (Maybe Integer)
-parseInteger = do
-   chunkSize <- getWord32le
+{-
+parseInteger :: BL.ByteString -> Maybe Integer
+parseInteger rawData = do
    case chunkSize of
       1 -> getWord8 >>= rvi
+   chunkSize <- BL.length rawData
+   chunkSize <- BL.length rawData
+   chunkSize <- BL.length rawData
       2 -> getWord16le >>= rvi
       4 -> getWord32le >>= rvi
       8 -> getWord64le >>= rvi
@@ -159,3 +155,10 @@ parseInteger = do
    where
       rvi :: Integral a => a -> Get (Maybe Integer)
       rvi = return . Just . fromIntegral
+
+      chunkSize = BL.Length rawData
+
+      eitherToMaybe :: Either a (b, c, d) -> Maybe d
+      eitherToMaybe (Left _) = Nothing
+      eitherToMaybe (Right (_, _, x)) = Just x
+      -}

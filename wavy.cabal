@@ -63,6 +63,7 @@ library
                        , Sound.Wav.Info
                        , Sound.Wav.Data
                        , Sound.Wav.AudioFormats
+                       , Sound.Wav.WaveFormat
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*

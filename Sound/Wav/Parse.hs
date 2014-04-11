@@ -41,10 +41,10 @@ fromRiffChunks chunks = do
    where
       formatChunk = onlyOneChunk waveFormatHeader $ filter (riffIdIs waveFormatHeader) chunks
       dataChunk = onlyOneChunk waveDataHeader $ filter (riffIdIs waveDataHeader) chunks
-      -- TODO what if there is more than one INFO chunk? is that allowed? How would we
-      -- merge it anyway?
       infoChunk = case filter (riffListIdIs waveInfoListType) chunks of
          [] -> Nothing
+         -- TODO what if there is more than one INFO chunk? is that allowed? How would we
+         -- merge it anyway?
          ((R.RiffChunkParent _ children) : _) -> Just . parseWaveInfo $ children
          _ -> Nothing
 

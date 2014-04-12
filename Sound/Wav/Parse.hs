@@ -8,6 +8,7 @@ import Sound.Wav.Data
 import Sound.Wav.AudioFormats (getAudioFormat)
 import Sound.Wav.WaveFormat
 import Sound.Wav.Info (parseWaveInfo)
+import Sound.Wav.Constants
 
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
@@ -79,8 +80,3 @@ riffIdIs _    _ = False
 riffListIdIs :: String -> R.RiffChunk -> Bool
 riffListIdIs comp (R.RiffChunkParent formatType _) = comp == formatType
 riffListIdIs _    _ = False
-
-waveHeader = "WAVE"
-waveFormatHeader = "fmt "
-waveDataHeader = "data"
-waveInfoListType = "INFO"

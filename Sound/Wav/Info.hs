@@ -9,6 +9,7 @@ module Sound.Wav.Info
    , updateWaveInfo
    , getInfoData
    , getMaybeInfoData
+   , waveInfoToRiffChunks
    ) where
 
 import Data.Binary (Get(..), Binary(..))
@@ -21,7 +22,7 @@ import qualified Data.Riff as R
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.Word
 
 import Sound.Wav.Core
@@ -95,6 +96,40 @@ putWaveInfo alignment ic = do
    pps "ITCH" (technician ic) putPaddedString
    where
       pps = putPossibleSection alignment
+
+waveInfoToRiffChunks :: WaveInfo -> [R.RiffChunk]
+waveInfoToRiffChunks waveInfo = catMaybes $ fmap (\x -> x waveInfo)
+   [ convertString      "IARL" . archiveLocation
+   , convertString      "IART" . artist
+   , convertString      "ICMS" . commissionedBy 
+   , convertString      "ICMT" . comments
+   , convertStringList  "ICOP" . copyrights
+   , convertString      "ICRD" . creationDate
+   , convertString      "ICRP" . croppedDetails
+   , convertString      "IDIM" . originalDimensions
+   , convertString      "IDPI" . dotsPerInch
+   , convertStringList  "IENG" . engineers
+   , convertString      "IGNR" . genre
+   , convertStringList  "IKEY" . keywords
+   , convertString      "ILGT" . lightness
+   , convertString      "IMED" . originalMedium
+   , convertString      "INAM" . name
+   , convertString      "IPLT" . coloursInPalette
+   , convertString      "IPRD" . originalProduct
+   , convertString      "ISBJ" . subject
+   -- TODO put our own name in here, then make it optional
+   , convertString      "ISFT" . creationSoftware
+   , convertString      "ISHP" . sharpness
+   , convertString      "ISCR" . contentSource
+   , convertString      "ISRF" . originalForm
+   , convertString      "ITCH" . technician
+   ]
+   where
+      convertString :: String -> Maybe String -> Maybe R.RiffChunk
+      convertString riffId = fmap (R.RiffChunkChild riffId . BLC.pack)
+
+      convertStringList :: String -> Maybe [String] -> Maybe R.RiffChunk
+      convertStringList riffId = convertString riffId . fmap (concat . intersperse "; ")
 
 -- | Get the INFO metadata from a Byte Stream.
 parseWaveInfo :: [R.RiffChunk] -> WaveInfo

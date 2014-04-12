@@ -6,7 +6,7 @@ import Control.Monad (replicateM, when)
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Char
-import Data.Maybe (Maybe(..))
+import Data.Maybe()
 import Data.Word
 import Data.Int (Int64)
 

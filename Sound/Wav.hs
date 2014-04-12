@@ -49,14 +49,9 @@ module Sound.Wav (
 
 import Data.Binary
 import Data.Binary.Get
-import Data.Binary.Put
-import Data.Int
-import Control.Monad (when)
 
-import Sound.Wav.Core
 import Sound.Wav.Data
 import Sound.Wav.Info
-import Sound.Wav.ChannelData
 import Sound.Wav.AudioFormats
 
 import Sound.Wav.Parse

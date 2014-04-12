@@ -53,7 +53,7 @@ library
   -- Modules exported by the library.
   exposed-modules:     Sound.Wav
 
-  -- ghc-options: -prof
+  ghc-options: -W
   
   -- Modules included in this library but not exported.
   other-modules:       Sound.Wav.Core

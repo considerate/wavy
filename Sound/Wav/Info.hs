@@ -5,16 +5,12 @@
 -- data easily.
 module Sound.Wav.Info 
    ( parseWaveInfo
-   , putWaveInfo
    , updateWaveInfo
    , getInfoData
    , getMaybeInfoData
    , waveInfoToRiffChunks
    ) where
 
-import Data.Binary (Get(..), Binary(..))
-import Data.Binary.Get
-import Data.Binary.Put
 import Data.List (intersperse)
 import Data.List.Split (splitOn)
 
@@ -22,8 +18,7 @@ import qualified Data.Riff as R
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.Word
+import Data.Maybe (catMaybes)
 
 import Sound.Wav.Core
 import Sound.Wav.Data
@@ -50,52 +45,6 @@ getMaybeInfoData
    :: WaveFile          -- ^ The file that you wish to extract INFO metadata from.
    -> Maybe WaveInfo   -- ^ A potential info chunk if it exists.
 getMaybeInfoData = waveInfo
-
--- Put Possible Section (pps)
-putPossibleSection :: BlockAlignment -> String -> Maybe a -> (a -> Put) -> Put
-putPossibleSection alignment ident possibleData convert = 
-   putPossible possibleData $ \d -> putRiffSection 2 ident (convert d)
-
-putPaddedString x = putString x >> putWord8 0 
-
-putStrings :: [String] -> Put
-putStrings xs = (sequence_ . intersperse (putString "; ") . fmap putString $ xs) >> putWord8 0
-
--- TODO work out what the correct output format for the integers is
--- | This allows you to write an infoChunk out in the format that it should appear in a
--- file. 
-putWaveInfo 
-   :: BlockAlignment    -- The INFO chunk must be aligned and this says how many bytes it should be aligned to
-   -> WaveInfo         -- ^ The info chunk that you wish to write out.
-   -> Put
-putWaveInfo alignment ic = do
-   putString "INFO"
-   pps "IARL" (archiveLocation ic) putPaddedString
-   pps "IART" (artist ic) putPaddedString
-   pps "ICMS" (commissionedBy ic) putPaddedString
-   pps "ICMT" (comments ic) putPaddedString
-   pps "ICOP" (copyrights ic) putStrings
-   pps "ICRD" (creationDate ic) putPaddedString
-   pps "ICRP" (croppedDetails ic) putPaddedString
-   pps "IDIM" (originalDimensions ic) putPaddedString
-   pps "IDPI" (dotsPerInch ic) putPaddedString
-   pps "IENG" (engineers ic) putStrings
-   pps "IGNR" (genre ic) putPaddedString
-   pps "IKEY" (keywords ic) putStrings
-   pps "ILGT" (lightness ic) putPaddedString
-   pps "IMED" (originalMedium ic) putPaddedString
-   pps "INAM" (name ic) putPaddedString
-   pps "IPLT" (coloursInPalette ic) putPaddedString
-   pps "IPRD" (originalProduct ic) putPaddedString
-   pps "ISBJ" (subject ic) putPaddedString
-   -- TODO put our own name in here, then make it optional
-   pps "ISFT" (Just "wavy (Haskell)") putPaddedString
-   pps "ISHP" (sharpness ic) putPaddedString
-   pps "ISCR" (contentSource ic) putPaddedString
-   pps "ISRF" (originalForm ic) putPaddedString
-   pps "ITCH" (technician ic) putPaddedString
-   where
-      pps = putPossibleSection alignment
 
 waveInfoToRiffChunks :: WaveInfo -> [R.RiffChunk]
 waveInfoToRiffChunks waveInfo = catMaybes $ fmap (\x -> x waveInfo)

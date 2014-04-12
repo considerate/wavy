@@ -1,9 +1,9 @@
 module Sound.Wav.Assemble 
    ( assembleWaveFile
+   , toRiffFile
    ) where
 
 import Sound.Wav.Data
-import Sound.Wav.AudioFormats
 import Sound.Wav.WaveFormat (putWaveFormat)
 import Sound.Wav.Constants
 import Sound.Wav.Info (waveInfoToRiffChunks)
@@ -16,6 +16,8 @@ import Data.Riff
 assembleWaveFile :: WaveFile -> Put
 assembleWaveFile = putRiffFile . toRiffFile
 
+-- TODO expose this file so that people can modify it before it is written to the
+-- filesystem
 toRiffFile :: WaveFile -> RiffFile
 toRiffFile waveFile = RiffFile 
    { riffFileType = RIFF
@@ -39,9 +41,9 @@ toRiffFile waveFile = RiffFile
       infoChunk :: Maybe RiffChunk
       infoChunk = fmap (wrapInfoList . waveInfoToRiffChunks) $ waveInfo waveFile
          where
-            wrapInfoList children = RiffChunkParent
+            wrapInfoList contents = RiffChunkParent
                { riffFormTypeInfo = waveInfoListType 
-               , riffChunkChildren = children
+               , riffChunkChildren = contents
                }
 
       dataChunk = RiffChunkChild

@@ -5,7 +5,6 @@ module Sound.Wav.Parse
 
 import qualified Data.Riff as R
 import Sound.Wav.Data
-import Sound.Wav.AudioFormats (getAudioFormat)
 import Sound.Wav.WaveFormat
 import Sound.Wav.Info (parseWaveInfo)
 import Sound.Wav.Constants
@@ -48,9 +47,6 @@ fromRiffChunks chunks = do
          -- merge it anyway?
          ((R.RiffChunkParent _ children) : _) -> Just . parseWaveInfo $ children
          _ -> Nothing
-
-runGetWaveInfo :: R.RiffChunk -> Get WaveInfo
-runGetWaveInfo (R.RiffChunkParent _ children) = undefined
 
 runGetWaveFormat :: R.RiffChunk -> Get WaveFormat
 runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) = 

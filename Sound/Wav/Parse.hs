@@ -32,7 +32,7 @@ fromRiffChunks chunks = do
    rawData <- dataChunk
    -- TODO potentially get the other chunks that we know about
    -- TODO Store the remaining chunks in an overflow of the riff chunks
-   return $ WaveFile 
+   return WaveFile 
       { waveFormat = format 
       , waveData = R.riffData rawData
       , waveFact = Nothing 
@@ -45,7 +45,7 @@ fromRiffChunks chunks = do
          [] -> Nothing
          -- TODO what if there is more than one INFO chunk? is that allowed? How would we
          -- merge it anyway?
-         ((R.RiffChunkParent _ children) : _) -> Just . parseWaveInfo $ children
+         (R.RiffChunkParent _ children : _) -> Just . parseWaveInfo $ children
          _ -> Nothing
 
 runGetWaveFormat :: R.RiffChunk -> Get WaveFormat
@@ -55,7 +55,7 @@ runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) =
       Right (_, _, waveFormat) -> return waveFormat
    where 
       postfix offset = " (" ++ show offset ++ ")"
-runGetWaveFormat _ = fail $ "Format chunk is not allowed to be a nested chunk!"
+runGetWaveFormat _ = fail "Format chunk is not allowed to be a nested chunk!"
 
 getFactChunkHelper :: Get WaveFact
 getFactChunkHelper = fmap WaveFact getWord32le

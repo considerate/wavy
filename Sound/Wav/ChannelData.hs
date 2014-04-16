@@ -60,7 +60,7 @@ putWaveData format rawData = mapM_ putter $ interleaveData rawData
       interleaveData = concat . transpose
 
       bytesPerChannelSample :: Word16
-      bytesPerChannelSample = (waveBitsPerSample format) `divRoundUp` 8
+      bytesPerChannelSample = waveBitsPerSample format `divRoundUp` 8
 
       
 wordPutter :: (Num a, Show a, Eq a) => a -> Integer -> Put
@@ -90,7 +90,7 @@ getWaveData format = do
       channels = fromIntegral $ waveNumChannels format
 
       bytesPerChannelSample :: Int64
-      bytesPerChannelSample = fromIntegral $ (waveBitsPerSample format) `divRoundUp` 8
+      bytesPerChannelSample = fromIntegral $ waveBitsPerSample format `divRoundUp` 8
 
 divRoundUp ::  Integral a => a -> a -> a
 divRoundUp num den = case num `divMod` den of

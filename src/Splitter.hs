@@ -13,6 +13,7 @@ module Main where
 -- We have multiple channels, we should merge them all into the same channel by averaging
 -- and then perform our logic.
 
+import Control.Monad (zipWithM)
 import Data.List (transpose, groupBy)
 import Data.Maybe (fromMaybe)
 import qualified Data.List.Split as S
@@ -28,7 +29,7 @@ splitFile filePath = do
    riffFile <- decodeWaveFile filePath
    case splitWavFile riffFile of
       Left error -> putStrLn error
-      Right files -> sequence_ $ zipWith encodeWaveFile filenames files
+      Right files -> zipWithM_ encodeWaveFile filenames files
    where
       filenames = fmap (\n -> show n ++ ".wav") [1..]
       writeFile (path, riffFile) = encodeWaveFile path riffFile
@@ -67,14 +68,14 @@ splitChannels channels = transpose groupKeepers
       --multiGroupKeepers = fmap groupKeepers joinedElements
 
       fstEqual a b = fst a == fst b
-      trueIsElem a = True `elem` (fmap fst a)
+      trueIsElem a = True `elem` fmap fst a
 
 expand :: Int -> [a] -> [a]
 expand count = go
    where
       go :: [b] -> [b]
       go [] = []
-      go (x:xs) = (take count $ repeat x) ++ go xs
+      go xs = foldr ((++) . replicate count) [] xs
 
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
@@ -86,7 +87,7 @@ valuableSections absSamples = fmap (> lowerBound) absSamples
 
 minMax :: Ord a => [a] -> Maybe (a, a)
 minMax [] = Nothing
-minMax (x:xs) = Just $ (min x minVal, max x maxVal)
+minMax (x:xs) = Just (min x minVal, max x maxVal)
    where
       (minVal, maxVal) = fromMaybe (x, x) $ minMax xs
 
@@ -109,7 +110,7 @@ absChannels :: [Channel] -> [Channel]
 absChannels = fmap absChannel
 
 absChannel :: Channel -> Channel
-absChannel samples = fmap abs samples
+absChannel = fmap abs
 
 average :: Integral a => [a] -> a
-average xs = (fromIntegral $ sum xs) `div` (fromIntegral $ length xs)
+average xs = fromIntegral $ sum xs `div` fromIntegral $ length xs

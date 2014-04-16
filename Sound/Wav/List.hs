@@ -27,7 +27,7 @@ putListChunk
    :: BlockAlignment -- ^ The number of bytes to align the data to.
    -> ListChunk      -- ^ The list chunk you wish to write out.
    -> Put
-putListChunk alignment listChunk = do
+putListChunk alignment listChunk =
    putPossible (listChunkData listChunk) $ \chunkType ->
       case chunkType of
          InfoListChunk infoData -> putInfoChunk alignment infoData

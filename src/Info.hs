@@ -16,7 +16,7 @@ You should have such data as:
 
 import System.Environment (getArgs)
 import Data.Either (partitionEithers)
-import Data.List (intersperse)
+import Data.List (intersperse, null)
 import Control.Monad (when)
 
 import qualified Data.ByteString.Lazy as BL
@@ -25,7 +25,7 @@ import Sound.Wav
 
 main = do 
    files <- getArgs
-   if length files == 0
+   if null files
       then putStrLn "No files were given, nothing was parsed."
       else mapM decodeWaveFileOrFail files >>= handleData files
 
@@ -78,7 +78,7 @@ displayTime (hours, minutes, seconds) = do
 audioTime :: WaveFile -> (Integer, Integer, Integer)
 audioTime file = (hours, minutes, seconds)
    where 
-      totalSeconds = (countSamples file) `divRoundUp` (fromIntegral $ waveSampleRate format)
+      totalSeconds = countSamples file `divRoundUp` fromIntegral $ waveSampleRate format
       (totalMinutes, seconds) = totalSeconds `divMod` 60
       (hours, minutes) = totalMinutes `divMod` 60 
 
@@ -148,7 +148,7 @@ prettyShowConvert chunk convert prefixWords =
    displayIfPresent (convert chunk) $ \showData -> do
       putStr $ prefix prefixWords
       putStr ": "
-      putStrLn . show $ showData
+      print showData
 
 prettyShowInfo :: WaveInfo -> (WaveInfo -> Maybe String) -> String -> IO ()
 prettyShowInfo chunk convert prefixWords =

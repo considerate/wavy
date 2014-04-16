@@ -62,7 +62,7 @@ skipToChunkBoundary start chunkSize = do
       when (bytesToSkip readAmount > 0) $ skip (bytesToSkip readAmount)
    where
       bytesToSkip :: Int64 -> Int
-      bytesToSkip currentLocation = fromIntegral $ start + (fromIntegral chunkSize) - currentLocation
+      bytesToSkip currentLocation = fromIntegral $ start + fromIntegral chunkSize - currentLocation
 
 -- Put Commands
 putString :: String -> Put
@@ -89,7 +89,7 @@ putRiffSection alignment ident contents = do
       
       sectionContents = runPut contents
 
-      putPaddingZeroes n = sequence_ . take (fromIntegral n) . repeat $ putWord8 0
+      putPaddingZeroes n = replicateM_ (fromIntegral n) (putWord8 0)
 
 putPossible :: Maybe a -> (a -> Put) -> Put
 putPossible = flip $ maybe (return ())

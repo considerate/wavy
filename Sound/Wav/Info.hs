@@ -37,7 +37,7 @@ updateWaveInfo updater waveFile = waveFile { waveInfo = fmap updater $ waveInfo 
 getInfoData 
    :: WaveFile    -- ^ The file that you wish to extract INFO metadata from.
    -> WaveInfo   -- ^ The info metadata.
-getInfoData = maybe waveInfoDefault id . waveInfo
+getInfoData = fromMaybe waveInfoDefault . waveInfo
 
 -- | Attempts to get the info chunk out of your WaveFile but if it does not exist then it
 -- returns Nothing. This way you know if you actually have anything that you can use.
@@ -78,14 +78,14 @@ waveInfoToRiffChunks waveInfo = catMaybes $ fmap (\x -> x waveInfo)
       convertString riffId = fmap (R.RiffChunkChild riffId . BLC.pack)
 
       convertStringList :: String -> Maybe [String] -> Maybe R.RiffChunk
-      convertStringList riffId = convertString riffId . fmap (concat . intersperse "; ")
+      convertStringList riffId = convertString riffId . fmap (intercalate "; ")
 
 -- | Get the INFO metadata from a Byte Stream.
 parseWaveInfo :: [R.RiffChunk] -> WaveInfo
 parseWaveInfo = foldr appendWaveInfo waveInfoDefault 
 
 appendWaveInfo :: R.RiffChunk -> WaveInfo -> WaveInfo
-appendWaveInfo (R.RiffChunkChild riffId rawData) initial = do
+appendWaveInfo (R.RiffChunkChild riffId rawData) initial =
    case riffId of
       "IARL" -> initial { archiveLocation = Just asString}
       "IART" -> initial { artist = Just asString}

@@ -52,12 +52,12 @@ bug-reports:         http://bitbucket.org/robertmassaioli/wavy/issues
 library
   -- Modules exported by the library.
   exposed-modules:     Sound.Wav
+                       , Sound.Wav.ChannelData
 
   ghc-options: -W
   
   -- Modules included in this library but not exported.
   other-modules:       Sound.Wav.Core
-                       , Sound.Wav.ChannelData
                        , Sound.Wav.Assemble
                        , Sound.Wav.Parse
                        , Sound.Wav.Info
@@ -65,6 +65,7 @@ library
                        , Sound.Wav.AudioFormats
                        , Sound.Wav.WaveFormat
                        , Sound.Wav.Constants
+                       , Sound.Wav.Binary
   
   -- Other library packages from which modules are imported.
   build-depends:       base ==4.5.*

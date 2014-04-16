@@ -57,7 +57,6 @@ runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) =
       postfix offset = " (" ++ show offset ++ ")"
 runGetWaveFormat _ = fail $ "Format chunk is not allowed to be a nested chunk!"
 
-
 getFactChunkHelper :: Get WaveFact
 getFactChunkHelper = fmap WaveFact getWord32le
 
@@ -67,7 +66,6 @@ onlyOneChunk _         [x] = return x
 onlyOneChunk chunkType xs  = fail $ "There are " ++ stringLength ++ " chunks of type '" ++ chunkType ++ "' in the WAVE data."
    where
       stringLength = show . length $ xs
-
 
 riffIdIs :: String -> R.RiffChunk -> Bool
 riffIdIs comp riffChunk@(R.RiffChunkChild _ _) = comp == R.riffChunkId riffChunk

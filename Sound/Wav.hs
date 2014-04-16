@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-
 -- | Everything about WAVE files is contained here: reading, editing and writing the data
 -- within is all possible in this module.
 module Sound.Wav (
@@ -23,8 +21,9 @@ module Sound.Wav (
    , WaveFact(..)
    , WaveInfo(..)
    , waveInfoDefault
-   , WaveData(..)
-   , Channel(..)
+   , WaveData
+   , WaveParseError
+   , Channel
 
    -- * Info Editing and Retrieval
    -- | These functions let you get the metadata section of your WAVE files; otherwise

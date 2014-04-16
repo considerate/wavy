@@ -56,7 +56,16 @@ data WaveFact = WaveFact
 
 -- | This datatype defines an INFO chunk and our internal representation of it. It is
 -- actually defined very clearly in section 2-14 of the Spec and we have tried to mirror
--- that representation here.
+-- that representation here. The spec says the following:
+--
+-- > An INFO list should contain only the following
+-- > chunks. New chunks may be defined, but an application
+-- > should ignore any chunk it doesn't understand. The
+-- > chunks listed below may only appear in an INFO list.
+-- > Each chunk contains a ZSTR, or null-terminated text
+-- > string.
+-- 
+-- Manipulations of that data structure should adhere to that specification.
 data WaveInfo = WaveInfo
    { archiveLocation       :: Maybe String
    , artist                :: Maybe String
@@ -70,7 +79,6 @@ data WaveInfo = WaveInfo
    , engineers             :: Maybe [String]
    , genre                 :: Maybe String
    , keywords              :: Maybe [String]
-   -- TODO how would this be better represented
    , lightness             :: Maybe String 
    , originalMedium        :: Maybe String 
    , name                  :: Maybe String
@@ -79,11 +87,9 @@ data WaveInfo = WaveInfo
    , subject               :: Maybe String
    -- TODO make sure we output our name
    , creationSoftware      :: Maybe String 
-   -- TODO how would this be better represented
    , sharpness             :: Maybe String 
    , contentSource         :: Maybe String
    , originalForm          :: Maybe String
-   -- TODO this is the person that digitised the file, prompt for this
    , technician            :: Maybe String 
    }
    deriving(Show)
@@ -117,8 +123,15 @@ waveInfoDefault = WaveInfo
 
 -- | The datastructure that contains all of the wave data. It contains the data of
 -- multiple channels.
-data WaveData = WaveData [Channel]
-              deriving(Show)
+type WaveData = [Channel]
+
+-- TODO I cannot decide wether to use some type of Integral type to represent the audio
+-- signal or if it would be better to convert it into a floating point signal. I remember
+-- doing some digital signal processing work whereby the signal could be transformed using
+-- just integer transforms. However, if you want to treat the signal without having to
+-- care about precision then converting it into a percentage of the maximum storable range
+-- makes sense. In that case you would want to use a Floating type. Maybe the correct
+-- option is to choose one of the two. The HaFFTS library uses floats.
 
 -- | A channel is a single stream of audio samples that plays for the entire length of the
 -- audio file. For example, in a Mono audio file there is only one channel but in a stereo
@@ -129,5 +142,4 @@ data WaveData = WaveData [Channel]
 --
 -- When channels are written out to a file the samples are interleaved by timestep and are
 -- written in order of channel number. 
-data Channel = Channel [Integer]
-             deriving(Show)
+type Channel = [Integer]

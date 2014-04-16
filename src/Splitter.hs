@@ -17,34 +17,33 @@ import Data.List (transpose, groupBy)
 import Data.Maybe (fromMaybe)
 import qualified Data.List.Split as S
 import System.Environment (getArgs)
+
 import Sound.Wav
+import Sound.Wav.ChannelData
 
 main = getArgs >>= splitFile . head
 
 splitFile :: FilePath -> IO ()
 splitFile filePath = do
    riffFile <- decodeWaveFile filePath
-   sequence_ $ zipWith encodeWaveFile filenames (splitWavFile riffFile)
+   case splitWavFile riffFile of
+      Left error -> putStrLn error
+      Right files -> sequence_ $ zipWith encodeWaveFile filenames files
    where
       filenames = fmap (\n -> show n ++ ".wav") [1..]
       writeFile (path, riffFile) = encodeWaveFile path riffFile
 
-splitWavFile :: WaveFile -> [WaveFile]
-splitWavFile originalFile = fmap (\newData -> originalFile {waveData = newData}) convertedData
-   where
-      soundData = waveData originalFile
-      convertedData = channelsToData . splitChannels . channelsInData $ soundData
-
-channelsInData (WaveData c) = c
-
-channelsToData :: [[Channel]] -> [WaveData]
-channelsToData = fmap WaveData
+-- TODO If a fact chunk is present then this function should update it
+splitWavFile :: WaveFile -> Either WaveParseError [WaveFile]
+splitWavFile originalFile = do
+   extractedData <- extractWaveData originalFile
+   return . fmap (encodeWaveData originalFile) $ splitChannels extractedData 
 
 retentionWidth = 10
 lowerBoundPercent = 2500
 
 -- Splits one set of channels into equal channel splits
-splitChannels :: [Channel] -> [[Channel]]
+splitChannels :: WaveData -> [WaveData]
 splitChannels channels = transpose groupKeepers
    where
       --retain :: Integral a => a => [a]
@@ -52,7 +51,7 @@ splitChannels channels = transpose groupKeepers
       retain x = expand (fromIntegral x) . valuableSections . squishChannel x . absChannel $ head channels
 
       joinedElements :: [[(Bool, Integer)]]
-      joinedElements = fmap (zip retention . toSamples) channels
+      joinedElements = fmap (zip retention) channels
          where
             retention = retain retentionWidth
    
@@ -62,7 +61,7 @@ splitChannels channels = transpose groupKeepers
       groupKeepers = fmap keepersToChannel joinedElements
 
       keepersToChannel :: [(Bool, Integer)] -> [Channel]
-      keepersToChannel = fmap (Channel . fmap snd) . filter trueIsElem . groupBy fstEqual
+      keepersToChannel = fmap (fmap snd) . filter trueIsElem . groupBy fstEqual
 
       --multiGroupKeepers :: [[Channel]]
       --multiGroupKeepers = fmap groupKeepers joinedElements
@@ -80,7 +79,7 @@ expand count = go
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
 valuableSections :: Channel -> [Bool]
-valuableSections (Channel absSamples) = fmap (> lowerBound) absSamples
+valuableSections absSamples = fmap (> lowerBound) absSamples
    where 
       (minSample, maxSample) = fromMaybe (0,0) $ minMax absSamples
       lowerBound = maxSample `div` lowerBoundPercent
@@ -95,16 +94,13 @@ firstChannel :: [Channel] -> Channel
 firstChannel = head
 
 averageChannels :: [Channel] -> Channel
-averageChannels = Channel . fmap average . transpose . fmap toSamples
-
-toSamples :: Channel -> [Integer]
-toSamples (Channel xs) = xs
+averageChannels = fmap average . transpose
 
 squishChannels :: Integral a => a -> [Channel] -> [Channel]
 squishChannels factor = fmap (squishChannel factor)
 
 squishChannel :: Integral a => a -> Channel -> Channel
-squishChannel factor (Channel samples) = Channel averagedSamples
+squishChannel factor samples = averagedSamples
    where
       averagedSamples = fmap average groupedSamples
       groupedSamples = S.chunksOf (fromIntegral factor) samples
@@ -113,7 +109,7 @@ absChannels :: [Channel] -> [Channel]
 absChannels = fmap absChannel
 
 absChannel :: Channel -> Channel
-absChannel (Channel samples) = Channel $ fmap abs samples
+absChannel samples = fmap abs samples
 
 average :: Integral a => [a] -> a
 average xs = (fromIntegral $ sum xs) `div` (fromIntegral $ length xs)

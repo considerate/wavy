@@ -97,9 +97,6 @@ audioTime file = (hours, minutes, seconds)
 
             factor = numChannels * bytesPerSample
 
-      extractChannels (WaveData channels) = channels
-      extractSamples (Channel samples) = samples
-
 prefix = ("     " ++)
 
 displayFormatSection :: WaveFormat -> IO ()

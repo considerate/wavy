@@ -9,7 +9,8 @@ from the file that you provide.
 Since this library is so new I currently recommend using a cabal-dev environment. You can
 build the code like this:
 
-    cabal-dev install
+    cabal sandbox init
+    cabal install
 
 And that is it. It should work just fine.
 

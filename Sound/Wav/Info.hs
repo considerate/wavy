@@ -11,14 +11,13 @@ module Sound.Wav.Info
    , waveInfoToRiffChunks
    ) where
 
-import Data.List (intersperse)
+import Data.List (intercalate)
 import Data.List.Split (splitOn)
+import Data.Maybe (catMaybes, fromMaybe)
 
 import qualified Data.Riff as R
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
-
-import Data.Maybe (catMaybes)
 
 import Sound.Wav.Core
 import Sound.Wav.Data

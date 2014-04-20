@@ -2,7 +2,7 @@ module Sound.Wav.Core where
 
 import Sound.Wav.Data
 
-import Control.Monad (replicateM, when)
+import Control.Monad (replicateM, replicateM_, when)
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Char

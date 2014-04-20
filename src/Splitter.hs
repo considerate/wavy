@@ -13,7 +13,7 @@ module Main where
 -- We have multiple channels, we should merge them all into the same channel by averaging
 -- and then perform our logic.
 
-import Control.Monad (zipWithM)
+import Control.Monad (zipWithM_)
 import Data.List (transpose, groupBy)
 import Data.Maybe (fromMaybe)
 import qualified Data.List.Split as S
@@ -113,4 +113,4 @@ absChannel :: Channel -> Channel
 absChannel = fmap abs
 
 average :: Integral a => [a] -> a
-average xs = fromIntegral $ sum xs `div` fromIntegral $ length xs
+average xs = fromIntegral $ sum xs `div` fromIntegral (length xs)

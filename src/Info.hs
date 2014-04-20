@@ -78,7 +78,7 @@ displayTime (hours, minutes, seconds) = do
 audioTime :: WaveFile -> (Integer, Integer, Integer)
 audioTime file = (hours, minutes, seconds)
    where 
-      totalSeconds = countSamples file `divRoundUp` fromIntegral $ waveSampleRate format
+      totalSeconds = countSamples file `divRoundUp` fromIntegral (waveSampleRate format)
       (totalMinutes, seconds) = totalSeconds `divMod` 60
       (hours, minutes) = totalMinutes `divMod` 60 
 

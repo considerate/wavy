@@ -68,7 +68,7 @@ library
                        , Sound.Wav.Binary
   
   -- Other library packages from which modules are imported.
-  build-depends:       base ==4.5.*
+  build-depends:       base >=4.5 && <5.0
                        , riff >=0.3 && <0.4
                        , binary ==0.7.*
                        , bytestring >=0.9 && <1.0
@@ -81,10 +81,10 @@ executable show-wav-data
 
    -- ghc-options: -prof
   
-   build-depends:       base ==4.5.*
-                          , split
-                          , pretty-show
-                          , wavy
+  build-depends:       base >=4.5 && <5.0
+                       , split
+                       , pretty-show
+                       , wavy
 
 executable wavinfo
    hs-source-dirs: src
@@ -92,9 +92,9 @@ executable wavinfo
 
    -- ghc-options: -prof
 
-   build-depends:      base ==4.5.*
-                       , bytestring >=0.9 && <1.0
-                       , wavy
+  build-depends:        base >=4.5 && <5.0
+                        , bytestring >=0.9 && <1.0
+                        , wavy
 
 executable wavsplit
    hs-source-dirs: src
@@ -102,6 +102,6 @@ executable wavsplit
 
    ghc-options: -rtsopts
 
-   build-depends:       base ==4.5.*
+  build-depends:        base >=4.5 && <5.0
                         , wavy
                         , split

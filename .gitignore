@@ -16,4 +16,5 @@
 # Temp Files
 *~
 .*.swp
+.*.swo
 *.out

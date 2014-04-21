@@ -61,7 +61,7 @@ displayName filename file =
 
 -- TODO copied from elsewhere, common code
 divRoundUp :: Integral a => a -> a -> a
-divRoundUp a b = res + if rem > 0 then 1 else 0 
+divRoundUp a b = res + signum rem
    where
       (res, rem) = a `divMod` b
 

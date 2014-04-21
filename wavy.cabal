@@ -75,9 +75,9 @@ library
                        , split ==0.2.*
                        , containers ==0.4.*
 
-executable show-wav-data
+executable wave-identity
    hs-source-dirs: src
-   main-is: Main.hs
+   main-is: Identity.hs
 
    -- ghc-options: -prof
   
@@ -86,7 +86,7 @@ executable show-wav-data
                        , pretty-show
                        , wavy
 
-executable wavinfo
+executable wave-info
    hs-source-dirs: src
    main-is: Info.hs
 
@@ -96,7 +96,7 @@ executable wavinfo
                         , bytestring >=0.9 && <1.0
                         , wavy
 
-executable wavsplit
+executable wave-split
    hs-source-dirs: src
    main-is: Splitter.hs
 

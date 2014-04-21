@@ -41,7 +41,7 @@ splitWavFile originalFile = do
    return . fmap (encodeWaveData originalFile) $ splitChannels extractedData 
 
 retentionWidth = 10
-lowerBoundPercent = 2500
+lowerBoundPercent = 100
 
 -- Splits one set of channels into equal channel splits
 splitChannels :: WaveData -> [WaveData]

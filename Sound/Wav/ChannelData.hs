@@ -18,23 +18,35 @@ import Data.List (transpose)
 import Data.List.Split (chunksOf)
 import Data.Word
 import Data.Int
-import qualified Data.ByteString.Lazy as BL
+import qualified Data.Vector as V
+-- import qualified Data.ByteString.Lazy as BL
 
-{-
-getData :: WaveFormat -> Get ChannelData
-getData format = do
-   totalLength <- remaining
-   -}
-
---getChannelDataInteger :: WaveFormat -> Get Integral
---getChannelDataInteger format = do
---   dataLength <- remaining
-
---   where
-      
--- 1 2 3 4 1 2 3 4 1 2 3 4
--- 1 2 3 4 | 1 2 3 4 | 1 2 3 4
--- 1 1 1, 2 2 2, 3 3 3, 4 4 4
+-- TODO we need two methods in here that will get the wave data
+--
+-- dataAsInteger :: WaveFile -> Int64
+-- dataAsFloating :: WaveFile -> Double
+--
+-- These two methods would let people get the data in any format that they please and let
+-- them deal with the data in a way that makes sense to them. Getting the wave form as
+-- integer data means that they can run convolutions and getting the data as floating
+-- values means that they can run things like the fast fourier transform over the data. It
+-- is becoming clear that you probably need both in order to perform the appropriate DSP
+-- tasks. Use some examples of different programs that process audio PCM data in order to
+-- discern what we should do with these signals.
+-- 
+-- Is it okay to use Int64? Do any DSP algorithms need to know how high the signal could
+-- be in order to work correctly? I don't think that convolution needs to.
+--
+-- When converting to an Int64 from an Int8 should we scale the data to fit?
+-- When converting from Int64 down to Int8 do we scale down or do we just truncate the top
+-- of the signal?
+--
+-- Is Int64 more efficient that Integer? It Int64 less efficient than Int32?
+-- Wed Apr 30 08:22:04 EST 2014
+-- It seems that Int64 is more efficient on my machine but it will be less efficient on 32
+-- bit machines. I am having trouble deciding which is bettter. I think I will go with
+-- Int64 because I can always release a new version that uses Integer in the future. The
+-- best option would be to just push this decision to the consumer.
 
 extractWaveData :: WaveFile -> Either WaveParseError WaveData
 extractWaveData waveFile = case runGetOrFail getter rawData of
@@ -42,7 +54,7 @@ extractWaveData waveFile = case runGetOrFail getter rawData of
    Right (_, _, parsedData) -> Right parsedData
    where
       rawData = waveData waveFile
-      getter = getWaveData (waveFormat waveFile)
+      getter = getWaveDataIntegral (waveFormat waveFile)
 
 -- TODO If the WaveFile has a fact chunk then we should update it at this point
 encodeWaveData :: WaveFile -> WaveData -> WaveFile
@@ -53,37 +65,51 @@ encodeWaveData file rawData = file { waveData = runPut putter }
 putWaveData :: WaveFormat -> WaveData -> Put
 putWaveData format rawData = mapM_ putter $ interleaveData rawData
    where
-      putter :: Integer -> Put
+      putter :: Int64 -> Put
       putter = wordPutter bytesPerChannelSample 
-
-      interleaveData :: WaveData -> [Integer]
-      interleaveData = concat . transpose
 
       bytesPerChannelSample :: Word16
       bytesPerChannelSample = waveBitsPerSample format `divRoundUp` 8
 
-      
-wordPutter :: (Num a, Show a, Eq a) => a -> Integer -> Put
+interleaveData :: WaveData -> [Int64]
+interleaveData (IntegralWaveData channels) = concat . transpose . fmap (fmap fromIntegral . V.toList) $ channels
+
+
+-- TODO putting from a higher number to a lower number should:
+--    snap to the bounds OR
+--    be merged in with aliases
+-- We need to decide which is the better approach. I think that aliasing makes more sense.
+wordPutter :: (Num a, Integral b, Show a, Eq a) => a -> b -> Put
 wordPutter 1 = putInt8 . fromIntegral
 wordPutter 2 = putInt16le . fromIntegral
 wordPutter 3 = putInt32le . fromIntegral
 wordPutter 4 = putInt64le . fromIntegral
 wordPutter x = \_ -> fail $ "The is no word putter for byte size " ++ show x
 
-wordGetter :: (Num a, Show a, Eq a) => a -> Get Integer
+wordGetter :: (Num a, Integral b, Show a, Eq a) => a -> Get b
 wordGetter 1 = fmap fromIntegral getInt8
 wordGetter 2 = fmap fromIntegral getInt16le
 wordGetter 3 = fmap fromIntegral getInt32le
 wordGetter 4 = fmap fromIntegral getInt64le
 wordGetter x = fail $ "Could not get a valid word getter for bytes " ++ show x ++ "."
 
-getWaveData :: WaveFormat -> Get WaveData
+-- TODO have a play around with the vector library till you are comfortable with it.
+-- Int8 \in [-128, 127]
+
+getWaveDataIntegral :: WaveFormat -> Get WaveData
+getWaveDataIntegral format = fmap convertData (getWaveData format)
+   where
+      convertData :: [[Int64]] -> WaveData
+      convertData = IntegralWaveData . fmap V.fromList
+   
+
+getWaveData :: WaveFormat -> Get [[Int64]]
 getWaveData format = do
    dataLength <- remaining
    let readableWords = fromIntegral $ dataLength `div` bytesPerChannelSample
    fmap (transpose . chunksOf channels) $ getNWords readableWords
    where
-      getNWords :: Int -> Get [Integer]
+      getNWords :: Int -> Get [Int64]
       getNWords words = replicateM words $ wordGetter bytesPerChannelSample
 
       channels :: Int

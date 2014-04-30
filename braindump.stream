@@ -1,0 +1,10 @@
+Wed Apr 30 17:31:40 EST 2014
+I have decided to provide two API's to move the data back and forth. One api will move it
+back and forth between integral data and the other will move it back and forth between
+floating data. I am just busy writing the two API's now. And it is possible that one will
+depend upon the other. I also need to decide what to do when we switch between the
+different precisions. Scaling the numbers becomes very important. I also want to download
+the vector library so that I can see how it works. I want to make sure that I am
+leveraging the very best methods that I can to perform my operations. Speaking of which, I
+have decided that Data.Vector is the best array representation library after reading a
+paper called "Exploiting Vector Instructions with Generalized Stream Fusion".

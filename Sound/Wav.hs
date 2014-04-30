@@ -6,6 +6,7 @@ module Sound.Wav (
    decodeWave
    , decodeWaveFile
    , decodeWaveFileOrFail
+   , withWaveFile
 
    -- * Writing Riff Files
    -- | You will need to write out your WAVE file data eventually and these functions will

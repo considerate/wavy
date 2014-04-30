@@ -1,5 +1,6 @@
 module Sound.Wav.Parse 
-   ( parseWaveStream
+   ( withWaveFile
+   , parseWaveStream
    , getWaveFile
    ) where
 
@@ -11,6 +12,12 @@ import Sound.Wav.Constants
 
 import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
+import System.IO (withBinaryFile, IOMode(..))
+
+withWaveFile :: FilePath -> (Either WaveParseError WaveFile -> IO ()) -> IO ()
+withWaveFile filePath action = withBinaryFile filePath ReadMode $ \h -> do
+   waveData <- fmap parseWaveStream (BL.hGetContents h)
+   action waveData
 
 parseWaveStream :: BL.ByteString -> Either WaveParseError WaveFile
 parseWaveStream input = case runGetOrFail getWaveFile input of

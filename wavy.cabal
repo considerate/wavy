@@ -74,6 +74,7 @@ library
                        , bytestring >=0.9 && <1.0
                        , split ==0.2.*
                        , containers ==0.4.*
+                       , vector ==0.10.*
 
 executable wave-identity
    hs-source-dirs: src
@@ -105,3 +106,9 @@ executable wave-split
   build-depends:        base >=4.5 && <5.0
                         , wavy
                         , split
+
+executable wave-graph
+   hs-source-dirs: src
+   main-is: Graph.hs
+   build-depends:       base >=4.5 && <5.0
+                        , wavy

@@ -18,15 +18,15 @@ bounds :: Bounded a => (a, a)
 bounds = (minBound, maxBound)
 
 scale :: (Bounded a, Bounded b, Integral a, Integral b) => (a, a) -> (b, b) -> a -> b
-scale (alow, ahigh) (blow, bhigh) start = fromIntegral endOffset
+scale (aLow, aHigh) (bLow, bHigh) start = fromIntegral endOffset
    where
       fi :: Integral d => d -> Integer
       fi = fromIntegral
       
-      startOffset = (fi start) - (fi alow)
-      endOffset = (round $ (startOffset % 1) * rat) - fi blow
+      startOffset = toRational $ fi start - fi aLow
+      endOffset = round (startOffset * rat) - fi bLow
 
       rat = bRange % aRange
 
-      aRange = (fi ahigh) - (fi alow)
-      bRange = (fi bhigh) - (fi blow)
+      aRange = fi aHigh - fi aLow
+      bRange = fi bHigh - fi bLow

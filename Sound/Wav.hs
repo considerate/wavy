@@ -22,9 +22,9 @@ module Sound.Wav (
    , WaveFact(..)
    , WaveInfo(..)
    , waveInfoDefault
-   , WaveData
+   , WaveData(..)
+   , WaveChannel
    , WaveParseError
-   , Channel
 
    -- * Info Editing and Retrieval
    -- | These functions let you get the metadata section of your WAVE files; otherwise

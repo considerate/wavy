@@ -4,6 +4,7 @@
 module Sound.Wav.Data where
 
 import Data.Word
+import Data.Int (Int64)
 import Data.Vector
 
 import qualified Data.ByteString.Lazy as BL
@@ -128,7 +129,7 @@ waveInfoDefault = WaveInfo
 -- multiple channels.
 --type WaveData = [Channel]
 data WaveData where
-   IntegralWaveData :: Integral a => [Vector a] -> WaveData
+   IntegralWaveData :: [WaveChannel] -> WaveData
 
 -- TODO I cannot decide wether to use some type of Integral type to represent the audio
 -- signal or if it would be better to convert it into a floating point signal. I remember
@@ -137,14 +138,4 @@ data WaveData where
 -- care about precision then converting it into a percentage of the maximum storable range
 -- makes sense. In that case you would want to use a Floating type. Maybe the correct
 -- option is to choose one of the two. The HaFFTS library uses floats.
-
--- | A channel is a single stream of audio samples that plays for the entire length of the
--- audio file. For example, in a Mono audio file there is only one channel but in a stereo
--- audio file there are two channels. 
---
--- There are no restrictions on how many channels your audio files may contain but each
--- channel added adds a significant percentage of data to the audio file.
---
--- When channels are written out to a file the samples are interleaved by timestep and are
--- written in order of channel number. 
-type Channel = [Integer]
+type WaveChannel = Vector Int64

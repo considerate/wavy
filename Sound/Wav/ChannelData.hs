@@ -10,10 +10,12 @@ module Sound.Wav.ChannelData
 
 import Sound.Wav.Data
 import Sound.Wav.Binary
+import Sound.Wav.Scale
 
 import Control.Monad (replicateM)
 import Data.Binary.Get
 import Data.Binary.Put
+import Data.Bits
 import Data.List (transpose)
 import Data.List.Split (chunksOf)
 import Data.Word
@@ -74,24 +76,24 @@ putWaveData format rawData = mapM_ putter $ interleaveData rawData
 interleaveData :: WaveData -> [Int64]
 interleaveData (IntegralWaveData channels) = concat . transpose . fmap (fmap fromIntegral . V.toList) $ channels
 
-
--- TODO putting from a higher number to a lower number should:
---    snap to the bounds OR
---    be merged in with aliases
--- We need to decide which is the better approach. I think that aliasing makes more sense.
-wordPutter :: (Num a, Integral b, Show a, Eq a) => a -> b -> Put
-wordPutter 1 = putInt8 . fromIntegral
-wordPutter 2 = putInt16le . fromIntegral
-wordPutter 3 = putInt32le . fromIntegral
-wordPutter 4 = putInt64le . fromIntegral
+-- When getting or putting words scale to and from whatever format the data comes in and
+-- get out.
+wordPutter :: (Num a, Show a, Eq a) => a -> Int64 -> Put
+wordPutter 1 = putInt8 . zeroStable (0 :: Int8)
+wordPutter 2 = putInt16le . zeroStable (0 :: Int16)
+wordPutter 3 = putInt32le . zeroStable (0 :: Int32)
+wordPutter 4 = putInt64le
 wordPutter x = \_ -> fail $ "The is no word putter for byte size " ++ show x
 
-wordGetter :: (Num a, Integral b, Show a, Eq a) => a -> Get b
-wordGetter 1 = fmap fromIntegral getInt8
-wordGetter 2 = fmap fromIntegral getInt16le
-wordGetter 3 = fmap fromIntegral getInt32le
-wordGetter 4 = fmap fromIntegral getInt64le
+wordGetter :: (Num a, Show a, Eq a) => a -> Get Int64
+wordGetter 1 = fmap zeroStable64 getInt8
+wordGetter 2 = fmap zeroStable64 getInt16le
+wordGetter 3 = fmap zeroStable64 getInt32le
+wordGetter 4 = getInt64le
 wordGetter x = fail $ "Could not get a valid word getter for bytes " ++ show x ++ "."
+
+zeroStable64 :: (Bits a, Integral a) => a -> Int64
+zeroStable64 = zeroStable (0 :: Int64)
 
 -- TODO have a play around with the vector library till you are comfortable with it.
 -- Int8 \in [-128, 127]
@@ -101,7 +103,6 @@ getWaveDataIntegral format = fmap convertData (getWaveData format)
    where
       convertData :: [[Int64]] -> WaveData
       convertData = IntegralWaveData . fmap V.fromList
-   
 
 getWaveData :: WaveFormat -> Get [[Int64]]
 getWaveData format = do

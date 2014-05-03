@@ -16,6 +16,8 @@ module Main where
 import Control.Monad (zipWithM_)
 import Data.List (transpose, groupBy)
 import Data.Maybe (fromMaybe)
+import Data.Int
+import qualified Data.Vector as V
 import qualified Data.List.Split as S
 import System.Environment (getArgs)
 
@@ -40,76 +42,97 @@ splitWavFile originalFile = do
    extractedData <- extractWaveData originalFile
    return . fmap (encodeWaveData originalFile) $ splitChannels extractedData 
 
+retentionWidth :: Int
 retentionWidth = 10
 lowerBoundPercent = 100
 
 -- Splits one set of channels into equal channel splits
 splitChannels :: WaveData -> [WaveData]
-splitChannels channels = transpose groupKeepers
+splitChannels (IntegralWaveData channels) = fmap IntegralWaveData groupKeepers
    where
       --retain :: Integral a => a => [a]
-      retain :: Integral a => a -> [Bool]
-      retain x = expand (fromIntegral x) . valuableSections . squishChannel x . absChannel $ head channels
+      retain :: Int -> V.Vector Bool
+      retain x = expand x . valuableSections . squishChannel x . fmap abs $ head channels
 
-      joinedElements :: [[(Bool, Integer)]]
-      joinedElements = fmap (zip retention) channels
+      joinedElements :: [V.Vector (Bool, Int64)]
+      joinedElements = fmap (V.zip retention) channels
          where
             retention = retain retentionWidth
    
       --groupKeepers
 
-      groupKeepers :: [[Channel]]
-      groupKeepers = fmap keepersToChannel joinedElements
+      groupKeepers :: [[WaveChannel]]
+      groupKeepers = fmap (map (fmap snd) . groupByVector fstEqual) joinedElements
 
-      keepersToChannel :: [(Bool, Integer)] -> [Channel]
-      keepersToChannel = fmap (fmap snd) . filter trueIsElem . groupBy fstEqual
+      -- keepersToChannel :: [(Bool, Integer)] -> WaveChannel
+      -- keepersToChannel = fmap (fmap snd) . filter trueIsElem . groupBy fstEqual
 
       --multiGroupKeepers :: [[Channel]]
       --multiGroupKeepers = fmap groupKeepers joinedElements
 
-      fstEqual a b = fst a == fst b
       trueIsElem a = True `elem` fmap fst a
 
-expand :: Int -> [a] -> [a]
-expand count = go
+fstEqual :: Eq a => (a, b) -> (a, c) -> Bool
+fstEqual a b = fst a == fst b
+
+groupByVector :: (a -> a -> Bool) -> V.Vector a -> [V.Vector a]
+groupByVector eq vec = if V.null vec
+   then []
+   else V.take (1 + V.length ys) vec : groupByVector eq zs 
    where
-      go :: [b] -> [b]
-      go [] = []
-      go xs = foldr ((++) . replicate count) [] xs
+      (ys, zs) = V.span (eq x) vec
+      x = V.head vec
+
+expand :: Int -> V.Vector a -> V.Vector a
+expand count = V.foldr' ((V.++) . V.replicate count) V.empty
 
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
-valuableSections :: Channel -> [Bool]
+valuableSections :: WaveChannel -> V.Vector Bool
 valuableSections absSamples = fmap (> lowerBound) absSamples
    where 
       (minSample, maxSample) = fromMaybe (0,0) $ minMax absSamples
       lowerBound = maxSample `div` lowerBoundPercent
 
-minMax :: Ord a => [a] -> Maybe (a, a)
-minMax [] = Nothing
-minMax (x:xs) = Just (min x minVal, max x maxVal)
+minMax :: Ord a => V.Vector a -> Maybe (a, a)
+minMax vec = if V.null vec
+   then Nothing
+   else Just (min x minVal, max x maxVal)
    where
       (minVal, maxVal) = fromMaybe (x, x) $ minMax xs
+      x = V.head vec
+      xs = V.tail vec
 
-firstChannel :: [Channel] -> Channel
-firstChannel = head
+firstChannel :: WaveData -> WaveChannel
+firstChannel (IntegralWaveData channels) = head channels
 
-averageChannels :: [Channel] -> Channel
-averageChannels = fmap average . transpose
+averageChannels :: [WaveChannel] -> WaveChannel
+averageChannels = fmap average . joinVectors
 
-squishChannels :: Integral a => a -> [Channel] -> [Channel]
-squishChannels factor = fmap (squishChannel factor)
+joinVectors :: [V.Vector a] -> V.Vector [a]
+joinVectors = sequence
 
-squishChannel :: Integral a => a -> Channel -> Channel
-squishChannel factor samples = averagedSamples
+squishChannel :: Int -> WaveChannel -> WaveChannel
+squishChannel factor samples = averageChannels groupedSamples
    where
-      averagedSamples = fmap average groupedSamples
-      groupedSamples = S.chunksOf (fromIntegral factor) samples
+      groupedSamples = vectorChunksOf factor samples
 
-absChannels :: [Channel] -> [Channel]
-absChannels = fmap absChannel
+vectorChunksOf :: Int -> V.Vector a -> [V.Vector a]
+vectorChunksOf chunkSize = go
+   where
+      go :: V.Vector a -> [V.Vector a]
+      go v = 
+         if V.length v < chunkSize
+            then 
+               let (x, xs) = V.splitAt chunkSize v
+               in x : go xs
+            else [v]
 
-absChannel :: Channel -> Channel
+
+absWaveData :: WaveData -> WaveData
+absWaveData (IntegralWaveData waveData) = IntegralWaveData . fmap (fmap abs) $ waveData
+
+absChannel :: WaveChannel -> WaveChannel
 absChannel = fmap abs
 
 average :: Integral a => [a] -> a

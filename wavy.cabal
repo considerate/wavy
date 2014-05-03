@@ -107,9 +107,4 @@ executable wave-split
   build-depends:        base >=4.5 && <5.0
                         , wavy
                         , split
-
-executable wave-graph
-   hs-source-dirs: src
-   main-is: Graph.hs
-   build-depends:       base >=4.5 && <5.0
-                        , wavy
+                        , vector ==0.10.*

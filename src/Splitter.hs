@@ -14,7 +14,7 @@ module Main where
 -- and then perform our logic.
 
 import Control.Monad (zipWithM_)
-import Data.List (transpose, groupBy)
+import Data.List (transpose, groupBy, foldr)
 import Data.Maybe (fromMaybe)
 import Data.Int
 import qualified Data.Vector as V
@@ -44,13 +44,12 @@ splitWavFile originalFile = do
 
 retentionWidth :: Int
 retentionWidth = 10
-lowerBoundPercent = 100
+lowerBoundPercent = 10000
 
 -- Splits one set of channels into equal channel splits
 splitChannels :: WaveData -> [WaveData]
-splitChannels (IntegralWaveData channels) = fmap IntegralWaveData groupKeepers
+splitChannels (IntegralWaveData channels) = fmap IntegralWaveData $ [fmap zeroBadElements joinedElements]
    where
-      --retain :: Integral a => a => [a]
       retain :: Int -> V.Vector Bool
       retain x = expand x . valuableSections . squishChannel x . fmap abs $ head channels
 
@@ -59,18 +58,14 @@ splitChannels (IntegralWaveData channels) = fmap IntegralWaveData groupKeepers
          where
             retention = retain retentionWidth
    
-      --groupKeepers
+      zeroBadElements :: V.Vector (Bool, Int64) -> V.Vector Int64
+      zeroBadElements = fmap (\(keep, val) -> if keep then val else 0) 
 
       groupKeepers :: [[WaveChannel]]
       groupKeepers = fmap (map (fmap snd) . groupByVector fstEqual) joinedElements
 
-      -- keepersToChannel :: [(Bool, Integer)] -> WaveChannel
-      -- keepersToChannel = fmap (fmap snd) . filter trueIsElem . groupBy fstEqual
-
-      --multiGroupKeepers :: [[Channel]]
-      --multiGroupKeepers = fmap groupKeepers joinedElements
-
-      trueIsElem a = True `elem` fmap fst a
+trueIsElem :: [(Bool, a)] -> Bool 
+trueIsElem a = True `elem` fmap fst a
 
 fstEqual :: Eq a => (a, b) -> (a, c) -> Bool
 fstEqual a b = fst a == fst b
@@ -80,26 +75,36 @@ groupByVector eq vec = if V.null vec
    then []
    else V.take (1 + V.length ys) vec : groupByVector eq zs 
    where
-      (ys, zs) = V.span (eq x) vec
+      (ys, zs) = V.span (eq x) xs
       x = V.head vec
+      xs = V.tail vec
 
+-- TODO doing this function as a vector was previously slow. Try and come up with a more
+-- efficient way to write this method that does not require converting back and forth
+-- between lists
 expand :: Int -> V.Vector a -> V.Vector a
-expand count = V.foldr' ((V.++) . V.replicate count) V.empty
+expand count vec = asList (expandList count) vec
+
+expandList :: Int -> [a] -> [a]
+expandList count = foldr ((++) . replicate count) []
+
+asList :: ([a] -> [a]) -> V.Vector a -> V.Vector a
+asList f vec = V.fromList $ f (V.toList vec)
 
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
 valuableSections :: WaveChannel -> V.Vector Bool
 valuableSections absSamples = fmap (> lowerBound) absSamples
    where 
-      (minSample, maxSample) = fromMaybe (0,0) $ minMax absSamples
+      (minSample, maxSample) = minMax absSamples
       lowerBound = maxSample `div` lowerBoundPercent
 
-minMax :: Ord a => V.Vector a -> Maybe (a, a)
+minMax :: (Bounded a, Ord a) => V.Vector a -> (a, a)
 minMax vec = if V.null vec
-   then Nothing
-   else Just (min x minVal, max x maxVal)
+   then (maxBound, minBound)
+   else (min x minVal, max x maxVal)
    where
-      (minVal, maxVal) = fromMaybe (x, x) $ minMax xs
+      (minVal, maxVal) = minMax xs
       x = V.head vec
       xs = V.tail vec
 

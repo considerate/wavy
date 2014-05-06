@@ -127,9 +127,8 @@ waveInfoDefault = WaveInfo
 
 -- | The datastructure that contains all of the wave data. It contains the data of
 -- multiple channels.
---type WaveData = [Channel]
-data WaveData where
-   IntegralWaveData :: [WaveChannel] -> WaveData
+data IntegralWaveData = IntegralWaveData [IntegralWaveChannel]
+data FloatingWaveData = FloatingWaveData [FloatingWaveChannel]
 
 -- TODO I cannot decide wether to use some type of Integral type to represent the audio
 -- signal or if it would be better to convert it into a floating point signal. I remember
@@ -138,4 +137,5 @@ data WaveData where
 -- care about precision then converting it into a percentage of the maximum storable range
 -- makes sense. In that case you would want to use a Floating type. Maybe the correct
 -- option is to choose one of the two. The HaFFTS library uses floats.
-type WaveChannel = Vector Int64
+type IntegralWaveChannel = Vector Int64
+type FloatingWaveChannel = Vector Double

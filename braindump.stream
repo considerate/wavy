@@ -23,3 +23,7 @@ Vector type (too much copying). And the logic of the code is currently incorrect
 sets a lower bound. I need to make the lower bound a percentage and not an absolute
 number. In-fact, based on my other work in C it might be better to work out an average
 over the audio signal and then just disclude anything too much softer than the average.
+
+Wed May  7 07:54:43 EST 2014
+On a related note, since everything works (mostly) again we might be getting to the point
+where I would want to open a pull request.

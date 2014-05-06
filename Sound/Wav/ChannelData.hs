@@ -50,7 +50,7 @@ import qualified Data.Vector as V
 -- Int64 because I can always release a new version that uses Integer in the future. The
 -- best option would be to just push this decision to the consumer.
 
-extractWaveData :: WaveFile -> Either WaveParseError WaveData
+extractWaveData :: WaveFile -> Either WaveParseError IntegralWaveData
 extractWaveData waveFile = case runGetOrFail getter rawData of
    Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"
    Right (_, _, parsedData) -> Right parsedData
@@ -59,12 +59,12 @@ extractWaveData waveFile = case runGetOrFail getter rawData of
       getter = getWaveDataIntegral (waveFormat waveFile)
 
 -- TODO If the WaveFile has a fact chunk then we should update it at this point
-encodeWaveData :: WaveFile -> WaveData -> WaveFile
+encodeWaveData :: WaveFile -> IntegralWaveData -> WaveFile
 encodeWaveData file rawData = file { waveData = runPut putter }
    where
       putter = putWaveData (waveFormat file) rawData
 
-putWaveData :: WaveFormat -> WaveData -> Put
+putWaveData :: WaveFormat -> IntegralWaveData -> Put
 putWaveData format rawData = mapM_ putter $ interleaveData rawData
    where
       putter :: Int64 -> Put
@@ -73,7 +73,7 @@ putWaveData format rawData = mapM_ putter $ interleaveData rawData
       bytesPerChannelSample :: Word16
       bytesPerChannelSample = waveBitsPerSample format `divRoundUp` 8
 
-interleaveData :: WaveData -> [Int64]
+interleaveData :: IntegralWaveData -> [Int64]
 interleaveData (IntegralWaveData channels) = concat . transpose . fmap (fmap fromIntegral . V.toList) $ channels
 
 -- When getting or putting words scale to and from whatever format the data comes in and
@@ -98,10 +98,10 @@ zeroStable64 = zeroStable (0 :: Int64)
 -- TODO have a play around with the vector library till you are comfortable with it.
 -- Int8 \in [-128, 127]
 
-getWaveDataIntegral :: WaveFormat -> Get WaveData
+getWaveDataIntegral :: WaveFormat -> Get IntegralWaveData
 getWaveDataIntegral format = fmap convertData (getWaveData format)
    where
-      convertData :: [[Int64]] -> WaveData
+      convertData :: [[Int64]] -> IntegralWaveData
       convertData = IntegralWaveData . fmap V.fromList
 
 getWaveData :: WaveFormat -> Get [[Int64]]

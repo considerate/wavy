@@ -22,8 +22,10 @@ module Sound.Wav (
    , WaveFact(..)
    , WaveInfo(..)
    , waveInfoDefault
-   , WaveData(..)
-   , WaveChannel
+   , IntegralWaveData(..)
+   , IntegralWaveChannel
+   , FloatingWaveData(..)
+   , FloatingWaveChannel
    , WaveParseError
 
    -- * Info Editing and Retrieval

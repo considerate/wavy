@@ -47,7 +47,7 @@ retentionWidth = 10
 lowerBoundPercent = 10000
 
 -- Splits one set of channels into equal channel splits
-splitChannels :: WaveData -> [WaveData]
+splitChannels :: IntegralWaveData -> [IntegralWaveData]
 splitChannels (IntegralWaveData channels) = fmap IntegralWaveData $ [fmap zeroBadElements joinedElements]
    where
       retain :: Int -> V.Vector Bool
@@ -61,7 +61,7 @@ splitChannels (IntegralWaveData channels) = fmap IntegralWaveData $ [fmap zeroBa
       zeroBadElements :: V.Vector (Bool, Int64) -> V.Vector Int64
       zeroBadElements = fmap (\(keep, val) -> if keep then val else 0) 
 
-      groupKeepers :: [[WaveChannel]]
+      groupKeepers :: [[IntegralWaveChannel]]
       groupKeepers = fmap (map (fmap snd) . groupByVector fstEqual) joinedElements
 
 trueIsElem :: [(Bool, a)] -> Bool 
@@ -93,7 +93,7 @@ asList f vec = V.fromList $ f (V.toList vec)
 
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
-valuableSections :: WaveChannel -> V.Vector Bool
+valuableSections :: IntegralWaveChannel -> V.Vector Bool
 valuableSections absSamples = fmap (> lowerBound) absSamples
    where 
       (minSample, maxSample) = minMax absSamples
@@ -108,16 +108,16 @@ minMax vec = if V.null vec
       x = V.head vec
       xs = V.tail vec
 
-firstChannel :: WaveData -> WaveChannel
+firstChannel :: IntegralWaveData -> IntegralWaveChannel
 firstChannel (IntegralWaveData channels) = head channels
 
-averageChannels :: [WaveChannel] -> WaveChannel
+averageChannels :: [IntegralWaveChannel] -> IntegralWaveChannel
 averageChannels = fmap average . joinVectors
 
 joinVectors :: [V.Vector a] -> V.Vector [a]
 joinVectors = sequence
 
-squishChannel :: Int -> WaveChannel -> WaveChannel
+squishChannel :: Int -> IntegralWaveChannel -> IntegralWaveChannel
 squishChannel factor samples = averageChannels groupedSamples
    where
       groupedSamples = vectorChunksOf factor samples
@@ -134,10 +134,10 @@ vectorChunksOf chunkSize = go
             else [v]
 
 
-absWaveData :: WaveData -> WaveData
+absWaveData :: IntegralWaveData -> IntegralWaveData
 absWaveData (IntegralWaveData waveData) = IntegralWaveData . fmap (fmap abs) $ waveData
 
-absChannel :: WaveChannel -> WaveChannel
+absChannel :: IntegralWaveChannel -> IntegralWaveChannel
 absChannel = fmap abs
 
 average :: Integral a => [a] -> a

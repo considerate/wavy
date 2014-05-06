@@ -24,6 +24,8 @@ import System.Environment (getArgs)
 import Sound.Wav
 import Sound.Wav.ChannelData
 
+import VectorUtils
+
 main = getArgs >>= splitFile . head
 
 splitFile :: FilePath -> IO ()
@@ -70,15 +72,6 @@ trueIsElem a = True `elem` fmap fst a
 fstEqual :: Eq a => (a, b) -> (a, c) -> Bool
 fstEqual a b = fst a == fst b
 
-groupByVector :: (a -> a -> Bool) -> V.Vector a -> [V.Vector a]
-groupByVector eq vec = if V.null vec
-   then []
-   else V.take (1 + V.length ys) vec : groupByVector eq zs 
-   where
-      (ys, zs) = V.span (eq x) xs
-      x = V.head vec
-      xs = V.tail vec
-
 -- TODO doing this function as a vector was previously slow. Try and come up with a more
 -- efficient way to write this method that does not require converting back and forth
 -- between lists
@@ -88,9 +81,6 @@ expand count vec = asList (expandList count) vec
 expandList :: Int -> [a] -> [a]
 expandList count = foldr ((++) . replicate count) []
 
-asList :: ([a] -> [a]) -> V.Vector a -> V.Vector a
-asList f vec = V.fromList $ f (V.toList vec)
-
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
 valuableSections :: IntegralWaveChannel -> V.Vector Bool
@@ -99,40 +89,16 @@ valuableSections absSamples = fmap (> lowerBound) absSamples
       (minSample, maxSample) = minMax absSamples
       lowerBound = maxSample `div` lowerBoundPercent
 
-minMax :: (Bounded a, Ord a) => V.Vector a -> (a, a)
-minMax vec = if V.null vec
-   then (maxBound, minBound)
-   else (min x minVal, max x maxVal)
-   where
-      (minVal, maxVal) = minMax xs
-      x = V.head vec
-      xs = V.tail vec
-
 firstChannel :: IntegralWaveData -> IntegralWaveChannel
 firstChannel (IntegralWaveData channels) = head channels
 
 averageChannels :: [IntegralWaveChannel] -> IntegralWaveChannel
 averageChannels = fmap average . joinVectors
 
-joinVectors :: [V.Vector a] -> V.Vector [a]
-joinVectors = sequence
-
 squishChannel :: Int -> IntegralWaveChannel -> IntegralWaveChannel
 squishChannel factor samples = averageChannels groupedSamples
    where
       groupedSamples = vectorChunksOf factor samples
-
-vectorChunksOf :: Int -> V.Vector a -> [V.Vector a]
-vectorChunksOf chunkSize = go
-   where
-      go :: V.Vector a -> [V.Vector a]
-      go v = 
-         if V.length v < chunkSize
-            then 
-               let (x, xs) = V.splitAt chunkSize v
-               in x : go xs
-            else [v]
-
 
 absWaveData :: IntegralWaveData -> IntegralWaveData
 absWaveData (IntegralWaveData waveData) = IntegralWaveData . fmap (fmap abs) $ waveData

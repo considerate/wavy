@@ -102,6 +102,8 @@ executable wave-split
    hs-source-dirs: src
    main-is: Splitter.hs
 
+   other-modules: VectorUtils
+
    ghc-options: -rtsopts
 
   build-depends:        base >=4.5 && <5.0

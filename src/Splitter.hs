@@ -41,30 +41,33 @@ splitFile filePath = do
 -- TODO If a fact chunk is present then this function should update it
 splitWavFile :: WaveFile -> Either WaveParseError [WaveFile]
 splitWavFile originalFile = do
-   extractedData <- extractWaveData originalFile
-   return . fmap (encodeWaveData originalFile) $ splitChannels extractedData 
+   extractedData <- extractFloatingWaveData originalFile
+   return . fmap (encodeFloatingWaveData originalFile) $ splitChannels extractedData 
 
 retentionWidth :: Int
 retentionWidth = 10
-lowerBoundPercent = 10000
+lowerBoundPercent = 0.05
 
 -- Splits one set of channels into equal channel splits
-splitChannels :: IntegralWaveData -> [IntegralWaveData]
-splitChannels (IntegralWaveData channels) = fmap IntegralWaveData $ [fmap zeroBadElements joinedElements]
+splitChannels :: FloatingWaveData -> [FloatingWaveData]
+splitChannels (FloatingWaveData channels) = 
+   fmap FloatingWaveData $ [fmap zeroBadElements joinedChannels]
    where
       retain :: Int -> V.Vector Bool
       retain x = expand x . valuableSections . squishChannel x . fmap abs $ head channels
 
-      joinedElements :: [V.Vector (Bool, Int64)]
-      joinedElements = fmap (V.zip retention) channels
+      joinedElements :: [V.Vector a] -> [V.Vector (Bool, a)]
+      joinedElements channels = fmap (V.zip retention) channels
          where
             retention = retain retentionWidth
    
-      zeroBadElements :: V.Vector (Bool, Int64) -> V.Vector Int64
+      zeroBadElements :: Num a => V.Vector (Bool, a) -> V.Vector a
       zeroBadElements = fmap (\(keep, val) -> if keep then val else 0) 
 
-      groupKeepers :: [[IntegralWaveChannel]]
-      groupKeepers = fmap (map (fmap snd) . groupByVector fstEqual) joinedElements
+      groupKeepers :: [[FloatingWaveChannel]]
+      groupKeepers = fmap (map (fmap snd) . groupByVector fstEqual) joinedChannels
+
+      joinedChannels = joinedElements channels
 
 trueIsElem :: [(Bool, a)] -> Bool 
 trueIsElem a = True `elem` fmap fst a
@@ -83,28 +86,20 @@ expandList count = foldr ((++) . replicate count) []
 
 -- | The purpose of this function is to break up the file into sections that look valuable
 -- and then we can begin to only take the sections that look good. 
-valuableSections :: IntegralWaveChannel -> V.Vector Bool
+valuableSections :: FloatingWaveChannel -> V.Vector Bool
 valuableSections absSamples = fmap (> lowerBound) absSamples
    where 
       (minSample, maxSample) = minMax absSamples
-      lowerBound = maxSample `div` lowerBoundPercent
+      diff = maxSample - minSample
+      lowerBound = minSample + lowerBoundPercent * diff
 
-firstChannel :: IntegralWaveData -> IntegralWaveChannel
-firstChannel (IntegralWaveData channels) = head channels
-
-averageChannels :: [IntegralWaveChannel] -> IntegralWaveChannel
-averageChannels = fmap average . joinVectors
-
-squishChannel :: Int -> IntegralWaveChannel -> IntegralWaveChannel
-squishChannel factor samples = averageChannels groupedSamples
+squishChannel :: Int -> FloatingWaveChannel -> FloatingWaveChannel
+squishChannel factor samples = fmap floatingAverage . joinVectors $ groupedSamples
    where
       groupedSamples = vectorChunksOf factor samples
 
-absWaveData :: IntegralWaveData -> IntegralWaveData
-absWaveData (IntegralWaveData waveData) = IntegralWaveData . fmap (fmap abs) $ waveData
-
-absChannel :: IntegralWaveChannel -> IntegralWaveChannel
-absChannel = fmap abs
+floatingAverage :: Floating a => [a] -> a
+floatingAverage xs = sum xs / fromIntegral (length xs)
 
 average :: Integral a => [a] -> a
 average xs = fromIntegral $ sum xs `div` fromIntegral (length xs)

@@ -35,6 +35,11 @@ groupByVector eq vec = if V.null vec
       x = V.head vec
       xs = V.tail vec
 
+-- TODO this is a dodgy hack...really should remove it
+instance Bounded Double where
+   maxBound = 1 / 0
+   minBound = -1 / 0
+
 -- I implimented this method myself
 minMax :: (Bounded a, Ord a) => V.Vector a -> (a, a)
 minMax vec = if V.null vec

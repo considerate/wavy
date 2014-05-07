@@ -1,11 +1,12 @@
 -- | This module allows us to deal with channel data inside of a riff file.
 module Sound.Wav.ChannelData 
    ( getWaveData
-   , extractWaveData
-   , encodeWaveData
-   , putWaveData
-   --, getData
-   --, putChannelData
+   , extractIntegralWaveData
+   , extractFloatingWaveData
+   , encodeIntegralWaveData
+   , encodeFloatingWaveData
+   , putIntegralWaveData
+   , putFloatingWaveData
    ) where
 
 import Sound.Wav.Data
@@ -50,31 +51,51 @@ import qualified Data.Vector as V
 -- Int64 because I can always release a new version that uses Integer in the future. The
 -- best option would be to just push this decision to the consumer.
 
-extractWaveData :: WaveFile -> Either WaveParseError IntegralWaveData
-extractWaveData waveFile = case runGetOrFail getter rawData of
+extractIntegralWaveData :: WaveFile -> Either WaveParseError IntegralWaveData
+extractIntegralWaveData waveFile = case runGetOrFail getter rawData of
    Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"
    Right (_, _, parsedData) -> Right parsedData
    where
       rawData = waveData waveFile
       getter = getWaveDataIntegral (waveFormat waveFile)
 
--- TODO If the WaveFile has a fact chunk then we should update it at this point
-encodeWaveData :: WaveFile -> IntegralWaveData -> WaveFile
-encodeWaveData file rawData = file { waveData = runPut putter }
+extractFloatingWaveData :: WaveFile -> Either WaveParseError FloatingWaveData
+extractFloatingWaveData waveFile = case runGetOrFail getter rawData of
+   Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"
+   Right (_, _, parsedData) -> Right parsedData
    where
-      putter = putWaveData (waveFormat file) rawData
+      rawData = waveData waveFile
+      getter = getWaveDataFloating $ waveFormat waveFile
 
-putWaveData :: WaveFormat -> IntegralWaveData -> Put
-putWaveData format rawData = mapM_ putter $ interleaveData rawData
+-- TODO If the WaveFile has a fact chunk then we should update it at this point
+encodeIntegralWaveData :: WaveFile -> IntegralWaveData -> WaveFile
+encodeIntegralWaveData file rawData = file { waveData = runPut putter }
+   where
+      putter = putIntegralWaveData (waveFormat file) rawData
+
+encodeFloatingWaveData :: WaveFile -> FloatingWaveData -> WaveFile
+encodeFloatingWaveData file rawData = file { waveData = runPut putter }
+   where
+      putter = putFloatingWaveData (waveFormat file) rawData
+
+putIntegralWaveData :: WaveFormat -> IntegralWaveData -> Put
+putIntegralWaveData format (IntegralWaveData rawData) = mapM_ putter $ interleaveData rawData
    where
       putter :: Int64 -> Put
-      putter = wordPutter bytesPerChannelSample 
+      putter = wordPutter (bytesPerChannelSample format)
 
-      bytesPerChannelSample :: Word16
-      bytesPerChannelSample = waveBitsPerSample format `divRoundUp` 8
+putFloatingWaveData :: WaveFormat -> FloatingWaveData -> Put
+putFloatingWaveData format (FloatingWaveData rawData) = 
+   mapM_ (putter . floatToInt) $ interleaveData rawData
+   where
+      putter :: Int64 -> Put
+      putter = wordPutter (bytesPerChannelSample format) 
 
-interleaveData :: IntegralWaveData -> [Int64]
-interleaveData (IntegralWaveData channels) = concat . transpose . fmap (fmap fromIntegral . V.toList) $ channels
+bytesPerChannelSample :: WaveFormat -> Word16
+bytesPerChannelSample format = waveBitsPerSample format `divRoundUp` 8
+
+interleaveData :: [V.Vector a] -> [a]
+interleaveData = concat . transpose . fmap V.toList
 
 -- When getting or putting words scale to and from whatever format the data comes in and
 -- get out.
@@ -103,6 +124,18 @@ getWaveDataIntegral format = fmap convertData (getWaveData format)
    where
       convertData :: [[Int64]] -> IntegralWaveData
       convertData = IntegralWaveData . fmap V.fromList
+
+getWaveDataFloating :: WaveFormat -> Get FloatingWaveData
+getWaveDataFloating format = fmap convertData (getWaveData format)
+   where
+      convertData :: [[Int64]] -> FloatingWaveData
+      convertData = FloatingWaveData . fmap (V.fromList . fmap intToFloat)
+
+intToFloat :: Int64 -> Double
+intToFloat x = (fromIntegral x) / (fromIntegral (maxBound :: Int64))
+
+floatToInt :: Double -> Int64
+floatToInt x = round $ x * fromIntegral (maxBound :: Int64)
 
 getWaveData :: WaveFormat -> Get [[Int64]]
 getWaveData format = do

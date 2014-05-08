@@ -1,5 +1,3 @@
-{-# LANGUAGE GADTs #-}
-
 -- | This module contains almost all of the Data structures required to deal with WAVE files.
 module Sound.Wav.Data where
 

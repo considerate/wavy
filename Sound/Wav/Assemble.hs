@@ -8,6 +8,7 @@ import Sound.Wav.WaveFormat (putWaveFormat)
 import Sound.Wav.Constants
 import Sound.Wav.Info (waveInfoToRiffChunks)
 
+import Control.Applicative ((<$>))
 import Data.Binary.Put
 import Data.Maybe (catMaybes)
 
@@ -39,7 +40,7 @@ toRiffFile waveFile = RiffFile
          }
 
       infoChunk :: Maybe RiffChunk
-      infoChunk = fmap (wrapInfoList . waveInfoToRiffChunks) $ waveInfo waveFile
+      infoChunk = (wrapInfoList . waveInfoToRiffChunks) <$> waveInfo waveFile
          where
             wrapInfoList contents = RiffChunkParent
                { riffFormTypeInfo = waveInfoListType 

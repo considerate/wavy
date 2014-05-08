@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances #-}
-
 -- | The Sound.Wav.Info module is responsible for abolutely everything in the INFO
 -- Metadata chunk of a RIFF file. It allows you to read, write and modify that chunk of
 -- data easily.
@@ -22,6 +20,8 @@ import qualified Data.ByteString.Lazy.Char8 as BLC
 import Sound.Wav.Core
 import Sound.Wav.Data
 
+import Control.Applicative ((<$>))
+
 -- TODO the code in this function could be greatly cleaned up via lenses
 -- | Update the INFO metadata chunk inside an existing WaveFile. This will allow you to
 -- edit the metadata inside a file.
@@ -29,7 +29,7 @@ updateWaveInfo
    :: (WaveInfo -> WaveInfo)   -- ^ The conversion function from original to new metadata.
    -> WaveFile                   -- ^ The input WaveFile that will be modified.
    -> WaveFile                   -- ^ A new WaveFile that contains the updated INFO section.
-updateWaveInfo updater waveFile = waveFile { waveInfo = fmap updater $ waveInfo waveFile }
+updateWaveInfo updater waveFile = waveFile { waveInfo = updater <$> waveInfo waveFile }
 
 -- | You want to be able to get the info chunk from your WaveFiles, however, if the info
 -- chunk does not exist then you will be provided with a default info chunk.
@@ -122,26 +122,3 @@ parseInfoString = dropTrailingNull . BLC.unpack
 
 parseInfoStrings :: BL.ByteString -> [String]
 parseInfoStrings = splitOn "; " . parseInfoString
-
-{-
-parseInteger :: BL.ByteString -> Maybe Integer
-parseInteger rawData = do
-   case chunkSize of
-      1 -> getWord8 >>= rvi
-   chunkSize <- BL.length rawData
-   chunkSize <- BL.length rawData
-   chunkSize <- BL.length rawData
-      2 -> getWord16le >>= rvi
-      4 -> getWord32le >>= rvi
-      8 -> getWord64le >>= rvi
-      _ -> return Nothing
-   where
-      rvi :: Integral a => a -> Get (Maybe Integer)
-      rvi = return . Just . fromIntegral
-
-      chunkSize = BL.Length rawData
-
-      eitherToMaybe :: Either a (b, c, d) -> Maybe d
-      eitherToMaybe (Left _) = Nothing
-      eitherToMaybe (Right (_, _, x)) = Just x
-      -}

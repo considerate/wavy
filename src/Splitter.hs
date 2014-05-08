@@ -13,6 +13,7 @@ module Main where
 -- We have multiple channels, we should merge them all into the same channel by averaging
 -- and then perform our logic.
 
+import Control.Applicative ((<$>))
 import Control.Monad (zipWithM_)
 import Data.List (transpose, groupBy, foldr)
 import Data.Maybe (fromMaybe)
@@ -51,13 +52,13 @@ lowerBoundPercent = 0.05
 -- Splits one set of channels into equal channel splits
 splitChannels :: FloatingWaveData -> [FloatingWaveData]
 splitChannels (FloatingWaveData channels) = 
-   fmap FloatingWaveData $ [fmap zeroBadElements joinedChannels]
+   FloatingWaveData <$> [fmap zeroBadElements joinedChannels]
    where
       retain :: Int -> V.Vector Bool
       retain x = expand x . valuableSections . squishChannel x . fmap abs $ head channels
 
       joinedElements :: [V.Vector a] -> [V.Vector (Bool, a)]
-      joinedElements channels = fmap (V.zip retention) channels
+      joinedElements = fmap (V.zip retention)
          where
             retention = retain retentionWidth
    
@@ -79,7 +80,7 @@ fstEqual a b = fst a == fst b
 -- efficient way to write this method that does not require converting back and forth
 -- between lists
 expand :: Int -> V.Vector a -> V.Vector a
-expand count vec = asList (expandList count) vec
+expand count = asList (expandList count)
 
 expandList :: Int -> [a] -> [a]
 expandList count = foldr ((++) . replicate count) []

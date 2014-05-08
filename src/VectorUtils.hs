@@ -24,7 +24,7 @@ joinVectors = sequence
 asList :: ([a] -> [a]) -> V.Vector a -> V.Vector a
 asList f vec = V.fromList $ f (V.toList vec)
 
--- An efficietn version of the groupBy function for Vectors
+-- An efficient version of the groupBy function for Vectors
 -- Attempting to get it merged back in. See: https://github.com/haskell/vector/pull/24
 groupByVector :: (a -> a -> Bool) -> V.Vector a -> [V.Vector a]
 groupByVector eq vec = if V.null vec

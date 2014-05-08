@@ -14,6 +14,7 @@ import Sound.Wav.Binary
 import Sound.Wav.Scale
 
 import Control.Monad (replicateM)
+import Control.Applicative ((<$>))
 import Data.Binary.Get
 import Data.Binary.Put
 import Data.Bits
@@ -132,7 +133,7 @@ getWaveDataFloating format = fmap convertData (getWaveData format)
       convertData = FloatingWaveData . fmap (V.fromList . fmap intToFloat)
 
 intToFloat :: Int64 -> Double
-intToFloat x = (fromIntegral x) / (fromIntegral (maxBound :: Int64))
+intToFloat x = fromIntegral x / fromIntegral (maxBound :: Int64)
 
 floatToInt :: Double -> Int64
 floatToInt x = round $ x * fromIntegral (maxBound :: Int64)
@@ -141,7 +142,7 @@ getWaveData :: WaveFormat -> Get [[Int64]]
 getWaveData format = do
    dataLength <- remaining
    let readableWords = fromIntegral $ dataLength `div` bytesPerChannelSample
-   fmap (transpose . chunksOf channels) $ getNWords readableWords
+   (transpose . chunksOf channels) <$> getNWords readableWords
    where
       getNWords :: Int -> Get [Int64]
       getNWords words = replicateM words $ wordGetter bytesPerChannelSample

@@ -110,3 +110,4 @@ executable wave-split
                         , wavy
                         , split
                         , vector ==0.10.*
+                        , filepath ==1.3.*

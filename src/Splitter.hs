@@ -21,6 +21,7 @@ import Data.Int
 import qualified Data.Vector as V
 import qualified Data.List.Split as S
 import System.Environment (getArgs)
+import System.FilePath (splitExtension)
 
 import Sound.Wav
 import Sound.Wav.ChannelData
@@ -29,6 +30,8 @@ import VectorUtils
 
 main = getArgs >>= splitFile . head
 
+-- TODO the best wayy to spot the spoken parts of the signal are to use the FFT output
+
 splitFile :: FilePath -> IO ()
 splitFile filePath = do
    riffFile <- decodeWaveFile filePath
@@ -36,7 +39,8 @@ splitFile filePath = do
       Left error -> putStrLn error
       Right files -> zipWithM_ encodeWaveFile filenames files
    where
-      filenames = fmap (\n -> show n ++ ".wav") [1..]
+      filenames = fmap (\n -> base ++ "." ++ show n ++ ext) [1..]
+      (base, ext) = splitExtension filePath
       writeFile (path, riffFile) = encodeWaveFile path riffFile
 
 -- TODO If a fact chunk is present then this function should update it

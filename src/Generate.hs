@@ -13,7 +13,7 @@ samplesPerSecond = 8000.0
 sampleRate = round samplesPerSecond
 
 generateValue :: Double -> Double
-generateValue count = sin (count / 8000 * pi)
+generateValue count = sin (count * 2000.0 / samplesPerSecond * pi)
 
 -- TODO I should provide a format generation function
 format :: WaveFormat

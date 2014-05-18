@@ -52,6 +52,9 @@ import qualified Data.Vector as V
 -- Int64 because I can always release a new version that uses Integer in the future. The
 -- best option would be to just push this decision to the consumer.
 
+emptyRawWaveData = FloatingWaveData []
+emptyIntegralWaveData = IntegralWaveData []
+
 extractIntegralWaveData :: WaveFile -> Either WaveParseError IntegralWaveData
 extractIntegralWaveData waveFile = case runGetOrFail getter rawData of
    Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"

@@ -21,6 +21,7 @@ import Data.Int
 import qualified Data.Vector as V
 import qualified Data.List.Split as S
 import System.Environment (getArgs)
+import System.Exit (exitWith, ExitCode(..))
 import System.FilePath (splitExtension)
 
 import Sound.Wav
@@ -28,7 +29,13 @@ import Sound.Wav.ChannelData
 
 import VectorUtils
 
-main = getArgs >>= splitFile . head
+main = do
+   args <- getArgs
+   case args of
+      [] -> do
+         putStrLn "Need to provide a file to be split. Exiting."
+         exitWith (ExitFailure 1)
+      (x:_) -> splitFile x
 
 -- TODO the best wayy to spot the spoken parts of the signal are to use the FFT output
 
@@ -39,9 +46,9 @@ splitFile filePath = do
       Left error -> putStrLn error
       Right files -> zipWithM_ encodeWaveFile filenames files
    where
-      filenames = fmap (\n -> base ++ "." ++ show n ++ ext) [1..]
+      filenames = fmap filenameFor [1..]
+      filenameFor n = base ++ "." ++ show n ++ ext
       (base, ext) = splitExtension filePath
-      writeFile (path, riffFile) = encodeWaveFile path riffFile
 
 -- TODO If a fact chunk is present then this function should update it
 splitWavFile :: WaveFile -> Either WaveParseError [WaveFile]
@@ -68,9 +75,6 @@ splitChannels (FloatingWaveData channels) =
    
       zeroBadElements :: Num a => V.Vector (Bool, a) -> V.Vector a
       zeroBadElements = fmap (\(keep, val) -> if keep then val else 0) 
-
-      groupKeepers :: [[FloatingWaveChannel]]
-      groupKeepers = fmap (map (fmap snd) . groupByVector fstEqual) joinedChannels
 
       joinedChannels = joinedElements channels
 

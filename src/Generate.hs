@@ -1,8 +1,5 @@
 module Main where
 
--- TODO allow specification on the command line of the Hz of the sine wave to be
--- generated. That way we can produce any sine wave that we like.
-
 import Sound.Wav
 import Sound.Wav.ChannelData
 
@@ -45,7 +42,6 @@ data GenerateInfo = GenerateInfo
    }
    deriving(Eq, Show)
 
--- TODO take an input number that is the Hz to generate the wave at
 generateWave :: GenerateInfo -> [Double]
 generateWave genInfo = take samplesRequired $ map valueGenerate [1.0..]
    where 
@@ -88,7 +84,6 @@ finalWaveFile genInfo = encodeFloatingWaveData waveFileTemplate $ toFloatingWave
 header = "Usage: wave-generate-sine <filename>"
 usageMessage = usageInfo header options
 
--- Require a output filename to be provided to the command
 main = do
    args <- getArgs
    case getOpt Permute options args of

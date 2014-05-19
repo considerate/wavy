@@ -107,7 +107,6 @@ handleFlags :: [Flag] -> FilePath -> IO ()
 handleFlags flags filename
    | Help `elem` flags = putStrLn usageMessage
    | otherwise = do
-      print flags
       putStr $ "Generating sine wave in file '" ++ filename ++ "'..."
       let genInfo = GenerateInfo { 
          duration = maybe 5 fromDuration $ find isDuration flags

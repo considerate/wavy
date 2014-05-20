@@ -16,7 +16,5 @@
 
 # Temp Files
 *~
-.*.swp
-.*.swo
-.*.swn
+.*.sw[a-p]
 *.out

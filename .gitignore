@@ -6,6 +6,7 @@
 
 # Cabal Sandbox
 /.cabal-sandbox
+/cabal.sandbox.config
 
 # Research - Don't include your research in the repository. Save it elsewhere.
 # The same applies to the data that you have for your large audio files. Audio files

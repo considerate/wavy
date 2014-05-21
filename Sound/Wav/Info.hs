@@ -5,7 +5,6 @@ module Sound.Wav.Info
    ( parseWaveInfo
    , updateWaveInfo
    , getInfoData
-   , getMaybeInfoData
    , waveInfoToRiffChunks
    ) where
 
@@ -17,7 +16,6 @@ import qualified Data.Riff as R
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as BLC
 
-import Sound.Wav.Core
 import Sound.Wav.Data
 
 import Control.Applicative ((<$>))
@@ -37,13 +35,6 @@ getInfoData
    :: WaveFile    -- ^ The file that you wish to extract INFO metadata from.
    -> WaveInfo   -- ^ The info metadata.
 getInfoData = fromMaybe waveInfoDefault . waveInfo
-
--- | Attempts to get the info chunk out of your WaveFile but if it does not exist then it
--- returns Nothing. This way you know if you actually have anything that you can use.
-getMaybeInfoData 
-   :: WaveFile          -- ^ The file that you wish to extract INFO metadata from.
-   -> Maybe WaveInfo   -- ^ A potential info chunk if it exists.
-getMaybeInfoData = waveInfo
 
 waveInfoToRiffChunks :: WaveInfo -> [R.RiffChunk]
 waveInfoToRiffChunks waveInfo = catMaybes $ fmap (\x -> x waveInfo)
@@ -119,6 +110,9 @@ appendWaveInfo _ initial = initial
 
 parseInfoString :: BL.ByteString -> String
 parseInfoString = dropTrailingNull . BLC.unpack
+
+dropTrailingNull :: String -> String
+dropTrailingNull = reverse . dropWhile (== '\0') . reverse
 
 parseInfoStrings :: BL.ByteString -> [String]
 parseInfoStrings = splitOn "; " . parseInfoString

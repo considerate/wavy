@@ -51,7 +51,7 @@ displayWaveFile (filename, file) = do
    putStrLn ""
    displayFormatSection . waveFormat $ file
    putStrLn ""
-   displayInfoSection . getMaybeInfoData $ file
+   displayInfoSection . waveInfo $ file
 
 displayName :: String -> WaveFile -> IO ()
 displayName filename file =

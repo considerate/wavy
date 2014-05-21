@@ -57,11 +57,10 @@ library
   ghc-options: -W
   
   -- Modules included in this library but not exported.
-  other-modules:       Sound.Wav.Core
+  other-modules:       Sound.Wav.Data
                        , Sound.Wav.Assemble
                        , Sound.Wav.Parse
                        , Sound.Wav.Info
-                       , Sound.Wav.Data
                        , Sound.Wav.AudioFormats
                        , Sound.Wav.WaveFormat
                        , Sound.Wav.Constants

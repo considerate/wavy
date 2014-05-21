@@ -32,7 +32,6 @@ module Sound.Wav (
    -- | These functions let you get the metadata section of your WAVE files; otherwise
    -- known as the INFO section of the RIFF file.
    , getInfoData
-   , getMaybeInfoData
    , updateWaveInfo
 
    -- * Audio Formats
@@ -49,15 +48,14 @@ module Sound.Wav (
 
    ) where
 
-import Data.Binary
-import Data.Binary.Get
-
+import Sound.Wav.Assemble 
+import Sound.Wav.AudioFormats
 import Sound.Wav.Data
 import Sound.Wav.Info
-import Sound.Wav.AudioFormats
-
 import Sound.Wav.Parse
-import Sound.Wav.Assemble 
+
+import Data.Binary
+import Data.Binary.Get
 
 import qualified Data.ByteString.Lazy as L
 

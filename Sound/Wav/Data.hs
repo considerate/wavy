@@ -40,7 +40,7 @@ data WaveFormat = WaveFormat
                                        -- important as it gives you an upper and lower bound 
                                        -- on the values present in the data.
    }
-   deriving(Show)
+   deriving (Show)
 
 -- | From the specifications:
 --
@@ -54,7 +54,7 @@ data WaveFormat = WaveFormat
 data WaveFact = WaveFact
    { waveFactSampleCount :: Word32 -- ^ The number of WAVE samples in this file.
    }
-   deriving(Show)
+   deriving (Show)
 
 -- | This datatype defines an INFO chunk and our internal representation of it. It is
 -- actually defined very clearly in section 2-14 of the Spec and we have tried to mirror
@@ -94,7 +94,7 @@ data WaveInfo = WaveInfo
    , originalForm          :: Maybe String
    , technician            :: Maybe String 
    }
-   deriving(Show)
+   deriving (Show)
    
 -- | This is the default value that an INFO chunk can take, a chunk that contains no
 -- metadata at all.
@@ -128,12 +128,5 @@ waveInfoDefault = WaveInfo
 data IntegralWaveData = IntegralWaveData [IntegralWaveChannel]
 data FloatingWaveData = FloatingWaveData [FloatingWaveChannel]
 
--- TODO I cannot decide wether to use some type of Integral type to represent the audio
--- signal or if it would be better to convert it into a floating point signal. I remember
--- doing some digital signal processing work whereby the signal could be transformed using
--- just integer transforms. However, if you want to treat the signal without having to
--- care about precision then converting it into a percentage of the maximum storable range
--- makes sense. In that case you would want to use a Floating type. Maybe the correct
--- option is to choose one of the two. The HaFFTS library uses floats.
 type IntegralWaveChannel = Vector Int64
 type FloatingWaveChannel = Vector Double

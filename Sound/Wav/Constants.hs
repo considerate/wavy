@@ -1,6 +1,7 @@
 module Sound.Wav.Constants where
 
-waveHeader = "WAVE"
-waveFormatHeader = "fmt "
-waveDataHeader = "data"
-waveInfoListType = "INFO"
+-- These are the Wave File RIFF Identifiers
+waveHeader        = "WAVE"
+waveFormatHeader  = "fmt "
+waveDataHeader    = "data"
+waveInfoListType  = "INFO"

@@ -64,6 +64,7 @@ runGetWaveFormat riffChunk@(R.RiffChunkChild _ _) =
       postfix offset = " (" ++ show offset ++ ")"
 runGetWaveFormat _ = fail "Format chunk is not allowed to be a nested chunk!"
 
+-- TODO parse the fact chunk out of WAVE files
 getFactChunkHelper :: Get WaveFact
 getFactChunkHelper = fmap WaveFact getWord32le
 

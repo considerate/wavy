@@ -34,6 +34,7 @@ toRiffFile waveFile = RiffFile
          -- TODO we discard all other chunks, we should include them in here
          ]
 
+      formatChunk :: RiffChunk
       formatChunk = RiffChunkChild
          { riffChunkId = waveFormatHeader
          , riffData = runPut . putWaveFormat . waveFormat $ waveFile
@@ -47,8 +48,8 @@ toRiffFile waveFile = RiffFile
                , riffChunkChildren = contents
                }
 
+      dataChunk :: RiffChunk
       dataChunk = RiffChunkChild
          { riffChunkId = waveDataHeader
          , riffData = waveData waveFile
          }
-

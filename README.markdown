@@ -48,9 +48,8 @@ Currently the following caveats exist:
    understand that the audio format is not what it should be. The data that is contained
    iside the parsed data structure for non PCM data is currently undefined.
  - There are currently no test cases.
- - There is currently no Haddock documenation on anything.
- - There are only the barest of examples to guide you into using the library.
 
 In short the library is new and experimental but you can use it to get data out of WAV
 files that only contain raw PCM data. You can also use this library to put the PCM data
-back out to a file.
+back out to a file. Hopefully this makes it easier for you to process audio data in
+Haskell.

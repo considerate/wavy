@@ -14,6 +14,7 @@ generateWave :: GenerateInfo -> [Double]
 generateWave genInfo = take samplesRequired $ map valueGenerate [1.0..]
    where 
       valueGenerate = generateValue genInfo
+
       samplesRequired :: Int
       samplesRequired = fromIntegral (sr * dur)
 
@@ -21,7 +22,14 @@ generateWave genInfo = take samplesRequired $ map valueGenerate [1.0..]
       dur = duration genInfo
 
 generateValue :: GenerateInfo -> Double -> Double
-generateValue genInfo count = sin (count * (frequency genInfo) / samplesPerSecond * pi * 2)
+generateValue genInfo count = sin (count * freq / samplesPerSecond * twoPI)
    where
-      samplesPerSecond = fromIntegral . sampleRate $ genInfo
+      samplesPerSecond :: Double
+      samplesPerSecond = fromIntegral sr
+
+      sr = sampleRate genInfo
+      freq = frequency genInfo
+
+twoPI :: Floating a => a
+twoPI = pi * 2
 

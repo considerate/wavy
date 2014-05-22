@@ -115,6 +115,8 @@ executable wave-generate-sine
    hs-source-dirs: src
    main-is: Generate.hs
 
+   other-modules:       SineGenerator
+
    ghc-options: -rtsopts
 
    build-depends:       base >=4.5 && <5.0

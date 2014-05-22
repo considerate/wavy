@@ -560,7 +560,7 @@ prettyShowAudioFormat xs = fromMaybe (noPretty xs) $ M.lookup xs audioFormatShow
       noPretty = ("Raw Format: " ++) . show
 
 audioFormatShow :: M.Map AudioFormat String
-audioFormatShow = M.fromList $
+audioFormatShow = M.fromList
    [ (MicrosoftPCM, "Microsoft PCM")
    , (MicrosoftADPCM, "Microsoft ADPCM")
    , (MicrosoftIEEEfloat, "Microsoft IEEE float")

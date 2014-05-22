@@ -1,74 +1,131 @@
 -- | This module allows us to deal with channel data inside of a riff file.
 module Sound.Wav.ChannelData 
-   ( getData
-   , putChannelData
+   ( getWaveData
+   , extractIntegralWaveData
+   , extractFloatingWaveData
+   , encodeIntegralWaveData
+   , encodeFloatingWaveData
+   , putIntegralWaveData
+   , putFloatingWaveData
    ) where
 
+import Sound.Wav.Data
+import Sound.Wav.Binary
+import Sound.Wav.Scale
+
+import Control.Monad (replicateM)
+import Control.Applicative ((<$>))
 import Data.Binary.Get
 import Data.Binary.Put
+import Data.Bits
 import Data.List (transpose)
 import Data.List.Split (chunksOf)
 import Data.Word
 import Data.Int
+import qualified Data.Vector as V
 
-import Sound.Wav.Data
-import Sound.Wav.Core
+emptyRawWaveData = FloatingWaveData []
+emptyIntegralWaveData = IntegralWaveData []
 
--- | Get the data section of a RiffFile and convert it into wave data.
-getData 
-   :: FormatChunk    -- The format chunk to work out important things like byte alignment.
-   -> Get WaveData   -- The wave data that was in the Data chunk of the file.
-getData format = do
-   dataHeader <- getIdentifier
-   if dataHeader /= "data"
-      then fail "Expected to be in the data section by now."
-      else getWord32le >>= getChannelData format >>= return . WaveData
-
-divRoundUp :: Integral a => a -> a -> a
-divRoundUp a b = res + if rem > 0 then 1 else 0 
+extractIntegralWaveData :: WaveFile -> Either WaveParseError IntegralWaveData
+extractIntegralWaveData waveFile = case runGetOrFail getter rawData of
+   Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"
+   Right (_, _, parsedData) -> Right parsedData
    where
-      (res, rem) = a `divMod` b
+      rawData = waveData waveFile
+      getter = getWaveDataIntegral (waveFormat waveFile)
 
-getChannelData :: FormatChunk -> ChunkSize -> Get [Channel]
-getChannelData format chunkSize =
-   fmap (map Channel . transpose . chunksOf channels) getAllSamples
+extractFloatingWaveData :: WaveFile -> Either WaveParseError FloatingWaveData
+extractFloatingWaveData waveFile = case runGetOrFail getter rawData of
+   Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"
+   Right (_, _, parsedData) -> Right parsedData
    where
-      channels = fromIntegral $ numChannels format
-      bytesPerSingleSample = (bitsPerSample format) `divRoundUp` 8
+      rawData = waveData waveFile
+      getter = getWaveDataFloating $ waveFormat waveFile
 
-      getAllSamples :: Get [Integer]
-      getAllSamples = sequence $
-         case bytesPerSingleSample of
-            1 -> take (chunkSizeBy 1) . fmap (fmap eightBitConversion) $ repeat getWord8
-            2 -> take (chunkSizeBy 2) . fmap (fmap fromIntegral) $ repeat getWord16le
-            4 -> take (chunkSizeBy 4) . fmap (fmap fromIntegral) $ repeat getWord32le
-            8 -> take (chunkSizeBy 8) . fmap (fmap fromIntegral) $ repeat getWord64le
-            _ -> fail $ "Cannot handle sample size of " ++ show bytesPerSingleSample ++ " bytes."
-         where 
-            chunkSizeBy x = fromIntegral $ chunkSize `div` x
-            -- TODO For some reason the spec wants 8 bit to be different from the rest
-            -- I do not and so I am converting it
-            eightBitConversion = fromIntegral . (flip (-) 128)
-
--- | Put the entire host of wave data back out to a byte stream.
-putChannelData 
-   :: FormatChunk    -- ^ The audio format that tells us how many bits to put out
-   -> WaveData       -- ^ The wave data to be written out.
-   -> Put
-putChannelData format = sequence_ . fmap putSample . concat . transpose . fmap toSamples . toChannels
+-- TODO If the WaveFile has a fact chunk then we should update it at this point
+encodeIntegralWaveData :: WaveFile -> IntegralWaveData -> WaveFile
+encodeIntegralWaveData file rawData = file { waveData = runPut putter }
    where
-      toSamples :: Channel -> [Integer]
-      toSamples (Channel xs) = xs
+      putter = putIntegralWaveData (waveFormat file) rawData
 
-      toChannels :: WaveData -> [Channel]
-      toChannels (WaveData c) = c
+encodeFloatingWaveData :: WaveFile -> FloatingWaveData -> WaveFile
+encodeFloatingWaveData file rawData = file { waveData = runPut putter }
+   where
+      putter = putFloatingWaveData (waveFormat file) rawData
 
-      convertInt :: Int8 -> Word8
-      convertInt x = fromIntegral $ x + 128
+putIntegralWaveData :: WaveFormat -> IntegralWaveData -> Put
+putIntegralWaveData format (IntegralWaveData rawData) = mapM_ putter $ interleaveData rawData
+   where
+      putter :: Int64 -> Put
+      putter = wordPutter (bytesPerChannelSample format)
 
-      putSample :: Integer -> Put
-      putSample value = case bitsPerSample format `div` 8 of
-         1 -> putWord8 . convertInt . fromIntegral $ value
-         2 -> putWord16le . fromIntegral $ value
-         3 -> putWord32le . fromIntegral $ value
-         4 -> putWord64le . fromIntegral $ value
+putFloatingWaveData :: WaveFormat -> FloatingWaveData -> Put
+putFloatingWaveData format (FloatingWaveData rawData) = 
+   mapM_ (putter . floatToInt) $ interleaveData rawData
+   where
+      putter :: Int64 -> Put
+      putter = wordPutter (bytesPerChannelSample format) 
+
+bytesPerChannelSample :: WaveFormat -> Word16
+bytesPerChannelSample format = waveBitsPerSample format `divRoundUp` 8
+
+interleaveData :: [V.Vector a] -> [a]
+interleaveData = concat . transpose . fmap V.toList
+
+-- When getting or putting words scale to and from whatever format the data comes in and
+-- get out.
+wordPutter :: (Num a, Show a, Eq a) => a -> Int64 -> Put
+wordPutter 1 = putInt8 . zeroStable (0 :: Int8)
+wordPutter 2 = putInt16le . zeroStable (0 :: Int16)
+wordPutter 3 = putInt32le . zeroStable (0 :: Int32)
+wordPutter 4 = putInt64le
+wordPutter x = \_ -> fail $ "The is no word putter for byte size " ++ show x
+
+wordGetter :: (Num a, Show a, Eq a) => a -> Get Int64
+wordGetter 1 = fmap zeroStable64 getInt8
+wordGetter 2 = fmap zeroStable64 getInt16le
+wordGetter 3 = fmap zeroStable64 getInt32le
+wordGetter 4 = getInt64le
+wordGetter x = fail $ "Could not get a valid word getter for bytes " ++ show x ++ "."
+
+zeroStable64 :: (Bits a, Integral a) => a -> Int64
+zeroStable64 = zeroStable (0 :: Int64)
+
+getWaveDataIntegral :: WaveFormat -> Get IntegralWaveData
+getWaveDataIntegral format = fmap convertData (getWaveData format)
+   where
+      convertData :: [[Int64]] -> IntegralWaveData
+      convertData = IntegralWaveData . fmap V.fromList
+
+getWaveDataFloating :: WaveFormat -> Get FloatingWaveData
+getWaveDataFloating format = fmap convertData (getWaveData format)
+   where
+      convertData :: [[Int64]] -> FloatingWaveData
+      convertData = FloatingWaveData . fmap (V.fromList . fmap intToFloat)
+
+intToFloat :: Int64 -> Double
+intToFloat x = fromIntegral x / fromIntegral (maxBound :: Int64)
+
+floatToInt :: Double -> Int64
+floatToInt x = round $ x * fromIntegral (maxBound :: Int64)
+
+getWaveData :: WaveFormat -> Get [[Int64]]
+getWaveData format = do
+   dataLength <- remaining
+   let readableWords = fromIntegral $ dataLength `div` bytesPerChannelSample
+   (transpose . chunksOf channels) <$> getNWords readableWords
+   where
+      getNWords :: Int -> Get [Int64]
+      getNWords words = replicateM words $ wordGetter bytesPerChannelSample
+
+      channels :: Int
+      channels = fromIntegral $ waveNumChannels format
+
+      bytesPerChannelSample :: Int64
+      bytesPerChannelSample = fromIntegral $ waveBitsPerSample format `divRoundUp` 8
+
+divRoundUp ::  Integral a => a -> a -> a
+divRoundUp num den = case num `divMod` den of
+   (x, 0) -> x
+   (x, _) -> x + 1

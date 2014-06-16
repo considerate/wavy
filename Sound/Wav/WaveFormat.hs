@@ -1,3 +1,4 @@
+-- | This module handles parsing the "fmt " header of a WaveFile.
 module Sound.Wav.WaveFormat 
    ( getWaveFormat
    , putWaveFormat
@@ -14,6 +15,8 @@ instance Binary WaveFormat where
    get = getWaveFormat
    put = putWaveFormat
 
+-- | Will successfully parse the format header of a WaveFile. They are very well specified leaving
+-- little room for error.
 getWaveFormat :: Get WaveFormat
 getWaveFormat = do
    -- TODO use the correct endian based on the correct parsing context
@@ -32,6 +35,8 @@ getWaveFormat = do
       , waveBitsPerSample = bitsPerSample
       }
 
+-- | Will successfully place a WaveFile fmt chunk into a binary stream. Follows the WAVE
+-- specifications.
 putWaveFormat :: WaveFormat-> Put
 putWaveFormat format = do
    putWord16le . putAudioFormat . waveAudioFormat $ format

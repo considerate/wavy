@@ -1,3 +1,5 @@
+-- | This module provides helper binary functions to get integer values from binary streams and put
+-- them back again.
 module Sound.Wav.Binary where
 
 import Data.Binary.Get

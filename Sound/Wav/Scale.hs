@@ -1,3 +1,5 @@
+-- | A module for various scale functions that we may need for the transformation of data in a wave
+-- file.
 module Sound.Wav.Scale 
    ( bounds
    , scale
@@ -28,9 +30,12 @@ import Data.Bits
 --
 -- So I should be able to write test cases that ensure that this is the case.
 
+-- | Given a bounded type it returns a lower and upper bound result.
 bounds :: Bounded a => (a, a)
 bounds = (minBound, maxBound)
 
+-- | Given two bounds linearly scale something fro the first range into the second. This method will
+-- ensure that the endpoints of the bounds meet in the scale.
 scale :: (Bounded a, Bounded b, Integral a, Integral b) => (a, a) -> (b, b) -> a -> b
 scale (aLow, aHigh) (bLow, bHigh) start = fromIntegral endOffset
    where
@@ -48,6 +53,8 @@ scale (aLow, aHigh) (bLow, bHigh) start = fromIntegral endOffset
 toRatio :: Integral a => a -> Ratio a
 toRatio = flip (%) 1
 
+-- | This is a scale function in which, given an example integer fro ma range it will scale a number
+-- a into that range. The most important part of this scale is that zeroStable x 0 = 0.
 zeroStable :: (Bits a, Bits b, Integral a, Integral b) => b -> a -> b
 zeroStable example x = fromIntegral $ shift (fromIntegral x :: Integer) (toBits - fromBits) 
    where

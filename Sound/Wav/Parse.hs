@@ -1,3 +1,6 @@
+-- | This module contains all of the Parsing operations for this library. In our nonmenclature
+-- Assemble is the opposite of parse so you should look at that module if you wish to perform the
+-- opposite operations.
 module Sound.Wav.Parse 
    ( withWaveFile
    , parseWaveStream
@@ -14,7 +17,13 @@ import Data.Binary.Get
 import qualified Data.ByteString.Lazy as BL
 import System.IO (withBinaryFile, IOMode(..))
 
-withWaveFile :: FilePath -> (Either WaveParseError WaveFile -> IO ()) -> IO ()
+-- | We would like to be able to pass in a path to a WaveFile and a handler so that we don't have to
+-- deal with opening / closing a file and parsing the contents just to apply a handler to the data.
+-- This is a convenience method that just lets you do something with a wave file.
+withWaveFile 
+   :: FilePath                                     -- ^ The location of the WaveFile in the filesystem.
+   -> (Either WaveParseError WaveFile -> IO ())    -- ^ A handler for the parse result. Note that the parse may fail and you should handle that.
+   -> IO ()                                        -- ^ An IO context is required because you are reading from the filesystem.
 withWaveFile filePath action = withBinaryFile filePath ReadMode $ \h -> do
    waveData <- fmap parseWaveStream (BL.hGetContents h)
    action waveData
@@ -24,6 +33,7 @@ parseWaveStream input = case runGetOrFail getWaveFile input of
    Left (_, offset, error) -> Left $ error ++ " (" ++ show offset ++ ")"
    Right (_, _, waveFile) -> Right waveFile
 
+-- | Provide a context that will parse a wave file.
 getWaveFile :: Get WaveFile
 getWaveFile = fromRiffFile =<< R.getRiffFile
       

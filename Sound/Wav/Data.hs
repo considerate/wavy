@@ -15,14 +15,21 @@ type ByteRate = Word32        -- ^ Byte Rate in an audio file.
 type BlockAlignment = Word16  -- ^ Represents the block alignment for the audio data.
 type BitsPerSample = Word16   -- ^ Represents how many bits are required per sample.
 
+-- | The representation for parser errors when attempting to read WaveFiles or their data.
 type WaveParseError = String
+-- | The format for raw, unparsed WaveData.
 type RawWaveData = BL.ByteString
 
+-- | The representation of a WaveFile. This ADT is this libraries representation of a WaveFile. It
+-- is important to note that the format chunk and data chunks are not optional. Also, the wave data
+-- is left in it's raw format so that it can be parsed appropriately later depending on wether you
+-- even want to parse the data or if you have the data in a special encoding that requires special
+-- handling.
 data WaveFile = WaveFile
-   { waveFormat :: WaveFormat
-   , waveData :: RawWaveData
-   , waveFact :: Maybe WaveFact
-   , waveInfo :: Maybe WaveInfo
+   { waveFormat :: WaveFormat    -- ^ The format chunk that specifies what data is present in this audio file.
+   , waveData :: RawWaveData     -- ^ The unparsed wave data so that you can choose to parse it in whichever way you please, if at all. Having this option makes metadata queries on wave files extremely fast.
+   , waveFact :: Maybe WaveFact  -- ^ A potential FACT chunk in the WaveFile.
+   , waveInfo :: Maybe WaveInfo  -- ^ An optional INFO chunk in the wave file that contains many different forms of metadata.
    }
    deriving (Show)
 
@@ -123,10 +130,12 @@ waveInfoDefault = WaveInfo
    Nothing
    Nothing
 
--- | The datastructure that contains all of the wave data. It contains the data of
--- multiple channels.
+-- | A multi-channel structure for holding integral wave data efficiently.
 data IntegralWaveData = IntegralWaveData [IntegralWaveChannel]
+-- | A multi-channel structure for holding floating wave data efficiently.
 data FloatingWaveData = FloatingWaveData [FloatingWaveChannel]
 
+-- | An efficient data structure for holding a single channel of integral wave data.
 type IntegralWaveChannel = Vector Int64
+-- | An efficient data structure for holding a single channel of floating wave data.
 type FloatingWaveChannel = Vector Double

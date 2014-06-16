@@ -13,13 +13,12 @@ name:                wavy
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            Extract the PCM data from your WAV files.
+synopsis:            Process WAVE files in Haskell.
 
 -- A longer description of the package.
-description:         Wavy was designed to be a fast and efficient method of extracting PCM
-                     data from WAV files. It is here to help you make fast use of Audio
-                     data in your Haskell programs and thus encourage many more audio
-                     projects in Haskell.
+description:         Wavy was designed to be a fast and efficient method of extracting and writing PCM
+                     data to and from WAV files. It is here to help you make fast use of Audio
+                     data in your Haskell programs and thus encourage many more audio projects in Haskell.
 
 -- The license under which the package is released.
 license:             BSD3
@@ -35,7 +34,7 @@ author:              Robert Massaioli <robertmassaioli@gmail.com>
 maintainer:          Robert Massaioli <robertmassaioli@gmail.com>
 
 -- A copyright notice.
--- copyright:           
+copyright:           (c) 2013-2014 Robert Massaioli <robertmassaioli@gmail.com>
 
 category:            Sound
 

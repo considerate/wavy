@@ -72,7 +72,7 @@ library
                        , binary ==0.7.*
                        , bytestring >=0.9 && <1.0
                        , split ==0.2.*
-                       , containers ==0.4.*
+                       , containers ==0.5.*
                        , vector ==0.10.*
 
 executable wave-identity

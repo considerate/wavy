@@ -23,6 +23,7 @@ import qualified Data.ByteString.Lazy as BL
 
 import Sound.Wav
 
+main :: IO ()
 main = do 
    files <- getArgs
    if null files
@@ -65,8 +66,9 @@ divRoundUp a b = res + signum rem
    where
       (res, rem) = a `divMod` b
 
-displayTime :: (Integer, Integer, Integer) -> IO ()
-displayTime (hours, minutes, seconds) = do
+displayTime :: Maybe (Integer, Integer, Integer) -> IO ()
+displayTime Nothing = error "Apparently there is no sample rate for this file."
+displayTime (Just (hours, minutes, seconds)) = do
    when isHours $ putStr (show hours ++ "h")
    when isMinutes $ putStr (show minutes ++ "m")
    when (isSeconds || not (isHours && isMinutes)) $ putStr (show seconds ++ "s")
@@ -75,8 +77,10 @@ displayTime (hours, minutes, seconds) = do
       isMinutes = minutes /= 0
       isSeconds = seconds /= 0
 
-audioTime :: WaveFile -> (Integer, Integer, Integer)
-audioTime file = (hours, minutes, seconds)
+audioTime :: WaveFile -> Maybe (Integer, Integer, Integer)
+audioTime file = if waveSampleRate format > 0
+   then Just (hours, minutes, seconds)
+   else Nothing
    where 
       totalSeconds = countSamples file `divRoundUp` fromIntegral (waveSampleRate format)
       (totalMinutes, seconds) = totalSeconds `divMod` 60

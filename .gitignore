@@ -18,3 +18,5 @@
 *~
 .*.sw[a-p]
 *.out
+
+.stack-work
